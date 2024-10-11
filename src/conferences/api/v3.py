@@ -82,7 +82,10 @@ async def V3CLONE_import_conference_xml_api():
     # print("\n"*5)
     # print(XML_URL)
     # print("\n"*5)
-    res = await controller.add_conference(content, XML_URL)
+    try:
+        res = await controller.add_conference(content, XML_URL, force=True)
+    except Exception as e:
+        raise
     conference = res['conference']
     # print(conference)
     # print("\n"*5)
