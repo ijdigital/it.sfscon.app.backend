@@ -107,7 +107,14 @@ async def convert_xml_to_dict(xml_text):
     return content['schedule']
 
 
-async def fetch_xml_content():
+async def fetch_xml_content(use_local_xml=False):
+
+    if use_local_xml:
+        current_file_folder = os.path.dirname(os.path.realpath(__file__))
+        if use_local_xml:
+            with open(current_file_folder + '/../../tests/assets/sfscon2024.xml', 'r') as f:
+                return await convert_xml_to_dict(f.read())
+
     XML_URL = os.getenv("XML_URL", None)
 
     if not XML_URL:
@@ -139,9 +146,10 @@ async def add_sessions(conference, content, tracks_by_name):
 
     def get_or_raise(key, obj):
 
+        # TODO: Ubi ovo kad srede unique  - id obrisi od 143-145 linije
         if key == '@unique_id':
-            if key not in obj:
-                return obj['@id']
+            # if key not in obj:
+            return obj['@id']
 
         if key not in obj:
             raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
@@ -506,6 +514,31 @@ async def get_pretix_order(conference: models.Conference, id_pretix_order: str):
         raise
 
 
+async def get_current_conference():
+    conference = await models.Conference.filter().prefetch_related('tracks',
+                                                                   'locations',
+                                                                   'event_sessions',
+                                                                   'event_sessions__track',
+                                                                   'event_sessions__room',
+                                                                   # 'event_sessions__room__location',
+                                                                   'event_sessions__lecturers',
+                                                                   'rooms',
+                                                                   # 'rooms__location',
+                                                                   'lecturers',
+                                                                   'lecturers__event_sessions',
+                                                                   'event_sessions__starred_session',
+
+                                                                   'event_sessions__anonymous_bookmarks',
+                                                                   'event_sessions__anonymous_rates',
+
+                                                                   ).order_by('-created').first()
+
+    if not conference:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="CONFERENCE_NOT_FOUND")
+    return conference
+
+
 async def get_conference(id_conference: uuid.UUID):
     conference = await models.Conference.filter(id=id_conference).prefetch_related('tracks',
                                                                                    'locations',
@@ -518,12 +551,110 @@ async def get_conference(id_conference: uuid.UUID):
                                                                                    # 'rooms__location',
                                                                                    'lecturers',
                                                                                    'lecturers__event_sessions',
-                                                                                   'event_sessions__starred_session'
+                                                                                   'event_sessions__starred_session',
+
+                                                                                   'event_sessions__anonymous_bookmarks',
+                                                                                   'event_sessions__anonymous_rates',
+
                                                                                    ).get_or_none()
+
     return conference
 
 
-async def opencon_serialize(conference):
+async def authorize_user():
+    anonymous = models.UserAnonymous()
+    await anonymous.save()
+    return str(anonymous.id)
+
+
+async def bookmark_session(id_user, id_session):
+    user = await models.UserAnonymous.filter(id=id_user).get_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="USER_NOT_FOUND")
+
+    session = await models.EventSession.filter(id=id_session).get_or_none()
+    if not session:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="SESSION_NOT_FOUND")
+
+    try:
+        current_bookmark = await models.AnonymousBookmark.filter(user=user, session=session).get_or_none()
+    except Exception as e:
+        raise
+
+    if not current_bookmark:
+        await models.AnonymousBookmark.create(user=user, session=session)
+        return {'bookmarked': True}
+    else:
+        await current_bookmark.delete()
+    return {'bookmarked': False}
+
+
+async def rate_session(id_user, id_session, rate):
+
+    if rate < 1 or rate > 5:
+        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                            detail="RATE_NOT_VALID")
+
+    user = await models.UserAnonymous.filter(id=id_user).get_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="USER_NOT_FOUND")
+
+    session = await models.EventSession.filter(id=id_session).prefetch_related('starred_session').get_or_none()
+    if not session:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="SESSION_NOT_FOUND")
+
+    try:
+        current_rate = await models.AnonymousRate.filter(user=user, session=session).get_or_none()
+    except Exception as e:
+        raise
+
+    if not current_rate:
+        await models.AnonymousRate.create(user=user, session=session, rate=rate)
+    else:
+        if current_rate.rate != rate:
+            await current_rate.update_from_dict({'rate': rate})
+            await current_rate.save()
+
+    all_rates = await models.AnonymousRate.filter(session=session).all()
+    avg_rate = sum([rate.rate for rate in all_rates]) / len(all_rates) if all_rates else 0
+
+    return {'avg_rate': avg_rate,
+            'total_rates': len(all_rates),
+            }
+
+
+async def opencon_serialize_anonymouse(user_id, conference, last_updated=None):
+
+    next_try_in_ms = 3000000
+    db_last_updated = str(tortoise.timezone.make_naive(conference.last_updated))
+
+    conference_avg_rating = {'rates_by_session': {},
+                             'my_rate_by_session': {}
+                             }
+    for session in conference.event_sessions:
+        if session.anonymous_rates.related_objects:
+            all_rates_for_session = [r.rate for r in session.anonymous_rates.related_objects]
+            if all_rates_for_session:
+                conference_avg_rating['rates_by_session'][str(session.id)] = [sum(all_rates_for_session)/len(all_rates_for_session), len(all_rates_for_session)]  # [session.anonymous_rates.avg_stars,
+            # session.anonymous_rates.nr_votes]
+
+    user = await models.UserAnonymous.filter(id=user_id).prefetch_related('bookmarks','rates').get_or_none()
+
+    bookmarks = [bookmark.session_id for bookmark in user.bookmarks.related_objects]
+    conference_avg_rating['my_rate_by_session'] = {str(rate.session_id): rate.rate for rate in user.rates.related_objects}
+
+    if last_updated and last_updated >= db_last_updated:
+        return {'last_updated': db_last_updated,
+                'ratings': conference_avg_rating,
+                'bookmarks': bookmarks,
+                'next_try_in_ms': next_try_in_ms,
+                'conference': None
+                }
+
     db = {}
     idx = {}
 
@@ -548,11 +679,11 @@ async def opencon_serialize(conference):
     idx['ordered_sessions_by_tracks'] = {t: [s['id'] for s in db['sessions'].values() if s['id_track'] == t] for t in db['tracks'].keys()}
     idx['days'] = sorted(list(days))
 
-    conference_avg_rating = {'rates_by_session': {}}
-    for session in conference.event_sessions:
-        if session.starred_session and session.starred_session.nr_votes:
-            conference_avg_rating['rates_by_session'][str(session.id)] = [session.starred_session.avg_stars,
-                                                                          session.starred_session.nr_votes]
+    # conference_avg_rating = {'rates_by_session': {}}
+    # for session in conference.event_sessions:
+    #     if session.starred_session and session.starred_session.nr_votes:
+    #         conference_avg_rating['rates_by_session'][str(session.id)] = [session.starred_session.avg_stars,
+    #                                                                       session.starred_session.nr_votes]
 
     with open(current_file_dir + '/../../tests/assets/sfscon2023sponsors.yaml', 'r') as f:
         db['sponsors'] = yaml.load(f, yaml.Loader)
@@ -563,9 +694,77 @@ async def opencon_serialize(conference):
 
     db['lecturers'] = re_ordered_lecturers
 
-    return {'last_updated': str(tortoise.timezone.make_naive(conference.last_updated)),
+    return {'last_updated': db_last_updated,
+            'ratings': conference_avg_rating,
+            'next_try_in_ms': next_try_in_ms,
+            'bookmarks': bookmarks,
+            'conference': {'acronym': str(conference.acronym),
+                           'db': db,
+                           'idx': idx
+                           }
+            }
+
+
+# REMOVE
+async def opencon_serialize(conference, last_updated=None):
+    next_try_in_ms = 3000000
+    db_last_updated = str(tortoise.timezone.make_naive(conference.last_updated))
+
+    conference_avg_rating = {'rates_by_session': {}}
+    for session in conference.event_sessions:
+        if session.starred_session and session.starred_session.nr_votes:
+            conference_avg_rating['rates_by_session'][str(session.id)] = [session.starred_session.avg_stars,
+                                                                          session.starred_session.nr_votes]
+
+    if last_updated and last_updated >= db_last_updated:
+        return {'last_updated': db_last_updated,
+                'conference_avg_rating': conference_avg_rating,
+                'next_try_in_ms': next_try_in_ms,
+                'conference': None
+                }
+
+    db = {}
+    idx = {}
+
+    with open(current_file_dir + '/../../tests/assets/sfs2023streaming.yaml', 'r') as f:
+        streaming_links = yaml.load(f, yaml.Loader)
+
+    idx['ordered_sponsors'] = []
+
+    db['tracks'] = {str(track.id): track.serialize() for track in conference.tracks}
+    db['locations'] = {str(location.id): location.serialize() for location in conference.locations}
+    db['rooms'] = {str(room.id): room.serialize() for room in conference.rooms}
+    db['sessions'] = {str(session.id): session.serialize(streaming_links) for session in conference.event_sessions}
+    db['lecturers'] = {str(lecturer.id): lecturer.serialize() for lecturer in conference.lecturers}
+    db['sponsors'] = {}
+
+    days = set()
+    for s in db['sessions'].values():
+        days.add(s['date'])
+
+    idx['ordered_lecturers_by_display_name'] = [l['id'] for l in sorted(db['lecturers'].values(), key=lambda x: x['display_name'])]
+    idx['ordered_sessions_by_days'] = {d: [s['id'] for s in db['sessions'].values() if s['date'] == d] for d in sorted(list(days))}
+    idx['ordered_sessions_by_tracks'] = {t: [s['id'] for s in db['sessions'].values() if s['id_track'] == t] for t in db['tracks'].keys()}
+    idx['days'] = sorted(list(days))
+
+    # conference_avg_rating = {'rates_by_session': {}}
+    # for session in conference.event_sessions:
+    #     if session.starred_session and session.starred_session.nr_votes:
+    #         conference_avg_rating['rates_by_session'][str(session.id)] = [session.starred_session.avg_stars,
+    #                                                                       session.starred_session.nr_votes]
+
+    with open(current_file_dir + '/../../tests/assets/sfscon2023sponsors.yaml', 'r') as f:
+        db['sponsors'] = yaml.load(f, yaml.Loader)
+
+    re_ordered_lecturers = {}
+    for l in idx['ordered_lecturers_by_display_name']:
+        re_ordered_lecturers[l] = db['lecturers'][l]
+
+    db['lecturers'] = re_ordered_lecturers
+
+    return {'last_updated': db_last_updated,
             'conference_avg_rating': conference_avg_rating,
-            'next_try_in_ms': 3000000,
+            'next_try_in_ms': next_try_in_ms,
             'conference': {'acronym': str(conference.acronym),
                            'db': db,
                            'idx': idx

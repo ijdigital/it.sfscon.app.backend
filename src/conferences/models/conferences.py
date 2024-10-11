@@ -8,6 +8,36 @@ from tortoise.models import Model
 from tortoise import fields
 
 
+class UserAnonymous(Model):
+    class Meta:
+        table = "conferences_users_anonymous"
+
+    id = fields.UUIDField(pk=True)
+    created = fields.DatetimeField(auto_now_add=True)
+
+
+class AnonymousBookmark(Model):
+    class Meta:
+        table = "conferences_anonymous_bookmarks"
+        unique_together = (('user', 'session'),)
+
+    id = fields.UUIDField(pk=True)
+    user = fields.ForeignKeyField('models.UserAnonymous', related_name='bookmarks')
+    session = fields.ForeignKeyField('models.EventSession', related_name='anonymous_bookmarks')
+
+
+class AnonymousRate(Model):
+    class Meta:
+        table = "conferences_anonymous_rates"
+        unique_together = (('user', 'session'),)
+
+    id = fields.UUIDField(pk=True)
+    user = fields.ForeignKeyField('models.UserAnonymous', related_name='rates')
+    session = fields.ForeignKeyField('models.EventSession', related_name='anonymous_rates')
+
+    rate = fields.IntField()
+
+
 class Conference(Model):
     class Meta:
         table = "conferences"
