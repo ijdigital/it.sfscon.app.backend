@@ -299,10 +299,10 @@ async def add_sessions(conference, content, tracks_by_name):
                                                                     end_date=event_start + datetime.timedelta(seconds=event_duration) if event_start and event_duration else None,
                                                                     )
 
-                        await models.StarredSession.create(event_session=db_event,
-                                                           nr_votes=0,
-                                                           total_stars=0,
-                                                           avg_stars=0)
+                        # await models.StarredSession.create(event_session=db_event,
+                        #                                    nr_votes=0,
+                        #                                    total_stars=0,
+                        #                                    avg_stars=0)
                     else:
 
                         event_start = tortoise.timezone.make_aware(event_start)
@@ -526,7 +526,7 @@ async def get_current_conference():
                                                                    # 'rooms__location',
                                                                    'lecturers',
                                                                    'lecturers__event_sessions',
-                                                                   'event_sessions__starred_session',
+                                                                   # 'event_sessions__starred_session',
 
                                                                    'event_sessions__anonymous_bookmarks',
                                                                    'event_sessions__anonymous_rates',
@@ -538,27 +538,27 @@ async def get_current_conference():
                             detail="CONFERENCE_NOT_FOUND")
     return conference
 
-
-async def get_conference(id_conference: uuid.UUID):
-    conference = await models.Conference.filter(id=id_conference).prefetch_related('tracks',
-                                                                                   'locations',
-                                                                                   'event_sessions',
-                                                                                   'event_sessions__track',
-                                                                                   'event_sessions__room',
-                                                                                   # 'event_sessions__room__location',
-                                                                                   'event_sessions__lecturers',
-                                                                                   'rooms',
-                                                                                   # 'rooms__location',
-                                                                                   'lecturers',
-                                                                                   'lecturers__event_sessions',
-                                                                                   'event_sessions__starred_session',
-
-                                                                                   'event_sessions__anonymous_bookmarks',
-                                                                                   'event_sessions__anonymous_rates',
-
-                                                                                   ).get_or_none()
-
-    return conference
+#
+# async def get_conference(id_conference: uuid.UUID):
+#     conference = await models.Conference.filter(id=id_conference).prefetch_related('tracks',
+#                                                                                    'locations',
+#                                                                                    'event_sessions',
+#                                                                                    'event_sessions__track',
+#                                                                                    'event_sessions__room',
+#                                                                                    # 'event_sessions__room__location',
+#                                                                                    'event_sessions__lecturers',
+#                                                                                    'rooms',
+#                                                                                    # 'rooms__location',
+#                                                                                    'lecturers',
+#                                                                                    'lecturers__event_sessions',
+#                                                                                    # 'event_sessions__starred_session',
+#
+#                                                                                    'event_sessions__anonymous_bookmarks',
+#                                                                                    'event_sessions__anonymous_rates',
+#
+#                                                                                    ).get_or_none()
+#
+#     return conference
 
 
 async def authorize_user():
@@ -602,7 +602,7 @@ async def rate_session(id_user, id_session, rate):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="USER_NOT_FOUND")
 
-    session = await models.EventSession.filter(id=id_session).prefetch_related('starred_session').get_or_none()
+    session = await models.EventSession.filter(id=id_session).get_or_none()
     if not session:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="SESSION_NOT_FOUND")
@@ -706,75 +706,75 @@ async def opencon_serialize_anonymouse(user_id, conference, last_updated=None):
 
 
 # REMOVE
-async def opencon_serialize(conference, last_updated=None):
-    next_try_in_ms = 3000000
-    db_last_updated = str(tortoise.timezone.make_naive(conference.last_updated))
+# async def opencon_serialize(conference, last_updated=None):
+#     next_try_in_ms = 3000000
+#     db_last_updated = str(tortoise.timezone.make_naive(conference.last_updated))
+#
+#     conference_avg_rating = {'rates_by_session': {}}
+#     for session in conference.event_sessions:
+#         if session.starred_session and session.starred_session.nr_votes:
+#             conference_avg_rating['rates_by_session'][str(session.id)] = [session.starred_session.avg_stars,
+#                                                                           session.starred_session.nr_votes]
+#
+#     if last_updated and last_updated >= db_last_updated:
+#         return {'last_updated': db_last_updated,
+#                 'conference_avg_rating': conference_avg_rating,
+#                 'next_try_in_ms': next_try_in_ms,
+#                 'conference': None
+#                 }
+#
+#     db = {}
+#     idx = {}
+#
+#     with open(current_file_dir + '/../../tests/assets/sfs2023streaming.yaml', 'r') as f:
+#         streaming_links = yaml.load(f, yaml.Loader)
+#
+#     idx['ordered_sponsors'] = []
+#
+#     db['tracks'] = {str(track.id): track.serialize() for track in conference.tracks}
+#     db['locations'] = {str(location.id): location.serialize() for location in conference.locations}
+#     db['rooms'] = {str(room.id): room.serialize() for room in conference.rooms}
+#     db['sessions'] = {str(session.id): session.serialize(streaming_links) for session in conference.event_sessions}
+#     db['lecturers'] = {str(lecturer.id): lecturer.serialize() for lecturer in conference.lecturers}
+#     db['sponsors'] = {}
+#
+#     days = set()
+#     for s in db['sessions'].values():
+#         days.add(s['date'])
+#
+#     idx['ordered_lecturers_by_display_name'] = [l['id'] for l in sorted(db['lecturers'].values(), key=lambda x: x['display_name'])]
+#     idx['ordered_sessions_by_days'] = {d: [s['id'] for s in db['sessions'].values() if s['date'] == d] for d in sorted(list(days))}
+#     idx['ordered_sessions_by_tracks'] = {t: [s['id'] for s in db['sessions'].values() if s['id_track'] == t] for t in db['tracks'].keys()}
+#     idx['days'] = sorted(list(days))
+#
+#     # conference_avg_rating = {'rates_by_session': {}}
+#     # for session in conference.event_sessions:
+#     #     if session.starred_session and session.starred_session.nr_votes:
+#     #         conference_avg_rating['rates_by_session'][str(session.id)] = [session.starred_session.avg_stars,
+#     #                                                                       session.starred_session.nr_votes]
+#
+#     with open(current_file_dir + '/../../tests/assets/sfscon2023sponsors.yaml', 'r') as f:
+#         db['sponsors'] = yaml.load(f, yaml.Loader)
+#
+#     re_ordered_lecturers = {}
+#     for l in idx['ordered_lecturers_by_display_name']:
+#         re_ordered_lecturers[l] = db['lecturers'][l]
+#
+#     db['lecturers'] = re_ordered_lecturers
+#
+#     return {'last_updated': db_last_updated,
+#             'conference_avg_rating': conference_avg_rating,
+#             'next_try_in_ms': next_try_in_ms,
+#             'conference': {'acronym': str(conference.acronym),
+#                            'db': db,
+#                            'idx': idx
+#                            }
+#             }
 
-    conference_avg_rating = {'rates_by_session': {}}
-    for session in conference.event_sessions:
-        if session.starred_session and session.starred_session.nr_votes:
-            conference_avg_rating['rates_by_session'][str(session.id)] = [session.starred_session.avg_stars,
-                                                                          session.starred_session.nr_votes]
 
-    if last_updated and last_updated >= db_last_updated:
-        return {'last_updated': db_last_updated,
-                'conference_avg_rating': conference_avg_rating,
-                'next_try_in_ms': next_try_in_ms,
-                'conference': None
-                }
-
-    db = {}
-    idx = {}
-
-    with open(current_file_dir + '/../../tests/assets/sfs2023streaming.yaml', 'r') as f:
-        streaming_links = yaml.load(f, yaml.Loader)
-
-    idx['ordered_sponsors'] = []
-
-    db['tracks'] = {str(track.id): track.serialize() for track in conference.tracks}
-    db['locations'] = {str(location.id): location.serialize() for location in conference.locations}
-    db['rooms'] = {str(room.id): room.serialize() for room in conference.rooms}
-    db['sessions'] = {str(session.id): session.serialize(streaming_links) for session in conference.event_sessions}
-    db['lecturers'] = {str(lecturer.id): lecturer.serialize() for lecturer in conference.lecturers}
-    db['sponsors'] = {}
-
-    days = set()
-    for s in db['sessions'].values():
-        days.add(s['date'])
-
-    idx['ordered_lecturers_by_display_name'] = [l['id'] for l in sorted(db['lecturers'].values(), key=lambda x: x['display_name'])]
-    idx['ordered_sessions_by_days'] = {d: [s['id'] for s in db['sessions'].values() if s['date'] == d] for d in sorted(list(days))}
-    idx['ordered_sessions_by_tracks'] = {t: [s['id'] for s in db['sessions'].values() if s['id_track'] == t] for t in db['tracks'].keys()}
-    idx['days'] = sorted(list(days))
-
-    # conference_avg_rating = {'rates_by_session': {}}
-    # for session in conference.event_sessions:
-    #     if session.starred_session and session.starred_session.nr_votes:
-    #         conference_avg_rating['rates_by_session'][str(session.id)] = [session.starred_session.avg_stars,
-    #                                                                       session.starred_session.nr_votes]
-
-    with open(current_file_dir + '/../../tests/assets/sfscon2023sponsors.yaml', 'r') as f:
-        db['sponsors'] = yaml.load(f, yaml.Loader)
-
-    re_ordered_lecturers = {}
-    for l in idx['ordered_lecturers_by_display_name']:
-        re_ordered_lecturers[l] = db['lecturers'][l]
-
-    db['lecturers'] = re_ordered_lecturers
-
-    return {'last_updated': db_last_updated,
-            'conference_avg_rating': conference_avg_rating,
-            'next_try_in_ms': next_try_in_ms,
-            'conference': {'acronym': str(conference.acronym),
-                           'db': db,
-                           'idx': idx
-                           }
-            }
-
-
-async def get_conference_by_acronym(acronym: str):
-    acronym = 'sfscon-2023'
-    return await models.Conference.filter(acronym=acronym).get_or_none()
+# async def get_conference_by_acronym(acronym: str):
+#     acronym = 'sfscon-2023'
+#     return await models.Conference.filter(acronym=acronym).get_or_none()
 
 
 # def now_timestamp():
@@ -817,156 +817,156 @@ async def get_conference_by_acronym(acronym: str):
 #             'human_readable': to_notify_by_session_emails}
 
 
-async def get_csv_attendees(acronym: str):
-    tmp_file = f'/tmp/{uuid.uuid4()}.csv'
-
-    conference = await get_conference_by_acronym(acronym=acronym)
-    if not conference:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="CONFERENCE_NOT_FOUND")
-
-    attendees = await models.PretixOrder.filter(conference=conference,
-                                                nr_printed_labels__gt=0
-                                                ).order_by('first_name').all()
-
-    with open(tmp_file, 'wt') as f:
-
-        writer = csv.writer(f)
-        writer.writerow(['First Name', 'Last Name', 'Email', 'Organization', 'Pretix Order'])
-        for pretix_order in attendees:
-            writer.writerow([pretix_order.first_name,
-                             pretix_order.last_name,
-                             pretix_order.email,
-                             pretix_order.organization,
-                             pretix_order.id_pretix_order
-                             ])
-
-    return tmp_file
-
-
-async def get_csv_talks(acronym: str):
-    tmp_file = f'/tmp/{uuid.uuid4()}.csv'
-
-    conference = await get_conference_by_acronym(acronym=acronym)
-    if not conference:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="CONFERENCE_NOT_FOUND")
-
-    conference = await get_conference(conference.id)
-    serialized = await opencon_serialize(conference)
-
-    bookmark_per_event = {}
-    for bpe in await models.Bookmark.filter(pretix_order__conference=conference).prefetch_related('pretix_order').all():
-        if str(bpe.event_session_id) not in bookmark_per_event:
-            bookmark_per_event[str(bpe.event_session_id)] = 0
-        bookmark_per_event[str(bpe.event_session_id)] += 1
-
-    rate_per_event = {}
-    for rpe in await models.StarredSession.filter(event_session__conference=conference).prefetch_related('event_session').all():
-        rate_per_event[str(rpe.event_session_id)] = rpe.total_stars / rpe.nr_votes if rpe.nr_votes else ''
-
-    with open(tmp_file, 'wt') as f:
-
-        writer = csv.writer(f)
-        writer.writerow(['Event', 'Speakers', 'Date', 'Bookmarks', 'Rating'])
-        for day in serialized['conference']['idx']['ordered_sessions_by_days']:
-            for id_session in serialized['conference']['idx']['ordered_sessions_by_days'][day]:
-                session = serialized['conference']['db']['sessions'][id_session]
-
-                writer.writerow([session['title'],
-                                 ', '.join([serialized['conference']['db']['lecturers'][id_lecturer]['display_name'] for id_lecturer in session['id_lecturers']]),
-                                 session['date'],
-                                 bookmark_per_event[str(id_session)] if id_session in bookmark_per_event else 0,
-                                 rate_per_event[str(id_session)] if str(id_session) in rate_per_event else ''
-                                 # random.randint(0, 100),
-                                 # round(random.randint(0, 500) / 100, 2)
-                                 ])
-
-    return tmp_file
+# async def get_csv_attendees(acronym: str):
+#     tmp_file = f'/tmp/{uuid.uuid4()}.csv'
+#
+#     conference = await get_conference_by_acronym(acronym=acronym)
+#     if not conference:
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+#                             detail="CONFERENCE_NOT_FOUND")
+#
+#     attendees = await models.PretixOrder.filter(conference=conference,
+#                                                 nr_printed_labels__gt=0
+#                                                 ).order_by('first_name').all()
+#
+#     with open(tmp_file, 'wt') as f:
+#
+#         writer = csv.writer(f)
+#         writer.writerow(['First Name', 'Last Name', 'Email', 'Organization', 'Pretix Order'])
+#         for pretix_order in attendees:
+#             writer.writerow([pretix_order.first_name,
+#                              pretix_order.last_name,
+#                              pretix_order.email,
+#                              pretix_order.organization,
+#                              pretix_order.id_pretix_order
+#                              ])
+#
+#     return tmp_file
 
 
-async def add_flow(conference: models.Conference, pretix_order: models.PretixOrder, text: str, data: dict = None):
-    if not text and not data:
-        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
-                            detail="TEXT_OR_DATA_MUST_BE_SET")
-
-    if not conference and pretix_order:
-        conference = pretix_order.conference
-
-    flow_id = uuid.uuid4()
-    await models.Flow.create(id=flow_id,
-                             conference=conference,
-                             pretix_order=pretix_order,
-                             text=text,
-                             data=data)
-
-    return {'id': flow_id}
-
-
-async def get_flows(conference: models.Conference, page: int, per_page: int, search: str):
-    offset = (page - 1) * per_page
-
-    query = models.Flow.filter(conference=conference).filter(text__icontains=search)
-
-    flows = await query.order_by('-created_at').offset(offset).limit(per_page).all()
-    count = await query.count()
-
-    summary = {
-        'page': page,
-        'per_page': per_page,
-        'total_count': count,
-        'total_pages': count // per_page + 1 if count % per_page else count // per_page,
-        'previous_page': page - 1 if page > 1 else None,
-        'next_page': page + 1 if page * per_page < count else None,
-    }
-
-    return {'summary': summary, 'items': [flow.serialize() for flow in flows],
-            'columns': [
-                'created',
-                'pretix_order',
-                'text',
-            ]}
+# async def get_csv_talks(acronym: str):
+#     tmp_file = f'/tmp/{uuid.uuid4()}.csv'
+#
+#     conference = await get_conference_by_acronym(acronym=acronym)
+#     if not conference:
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+#                             detail="CONFERENCE_NOT_FOUND")
+#
+#     conference = await get_conference(conference.id)
+#     serialized = await opencon_serialize(conference)
+#
+#     bookmark_per_event = {}
+#     for bpe in await models.Bookmark.filter(pretix_order__conference=conference).prefetch_related('pretix_order').all():
+#         if str(bpe.event_session_id) not in bookmark_per_event:
+#             bookmark_per_event[str(bpe.event_session_id)] = 0
+#         bookmark_per_event[str(bpe.event_session_id)] += 1
+#
+#     rate_per_event = {}
+#     for rpe in await models.StarredSession.filter(event_session__conference=conference).prefetch_related('event_session').all():
+#         rate_per_event[str(rpe.event_session_id)] = rpe.total_stars / rpe.nr_votes if rpe.nr_votes else ''
+#
+#     with open(tmp_file, 'wt') as f:
+#
+#         writer = csv.writer(f)
+#         writer.writerow(['Event', 'Speakers', 'Date', 'Bookmarks', 'Rating'])
+#         for day in serialized['conference']['idx']['ordered_sessions_by_days']:
+#             for id_session in serialized['conference']['idx']['ordered_sessions_by_days'][day]:
+#                 session = serialized['conference']['db']['sessions'][id_session]
+#
+#                 writer.writerow([session['title'],
+#                                  ', '.join([serialized['conference']['db']['lecturers'][id_lecturer]['display_name'] for id_lecturer in session['id_lecturers']]),
+#                                  session['date'],
+#                                  bookmark_per_event[str(id_session)] if id_session in bookmark_per_event else 0,
+#                                  rate_per_event[str(id_session)] if str(id_session) in rate_per_event else ''
+#                                  # random.randint(0, 100),
+#                                  # round(random.randint(0, 500) / 100, 2)
+#                                  ])
+#
+#     return tmp_file
 
 
-async def get_dashboard(acronym: str):
-    conference = await get_conference_by_acronym(acronym=acronym)
+# async def add_flow(conference: models.Conference, pretix_order: models.PretixOrder, text: str, data: dict = None):
+#     if not text and not data:
+#         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+#                             detail="TEXT_OR_DATA_MUST_BE_SET")
+#
+#     if not conference and pretix_order:
+#         conference = pretix_order.conference
+#
+#     flow_id = uuid.uuid4()
+#     await models.Flow.create(id=flow_id,
+#                              conference=conference,
+#                              pretix_order=pretix_order,
+#                              text=text,
+#                              data=data)
+#
+#     return {'id': flow_id}
 
-    organizations = set()
-    for pretix_order in await models.PretixOrder.filter(conference=conference).all():
-        if pretix_order.organization:
-            org = pretix_order.organization.strip().lower()
-            organizations.add(org)
 
-    registered_users = 'N/A'
-    async with httpx.AsyncClient() as client:
-        try:
-            PRETIX_ORGANIZER_ID = os.getenv('PRETIX_ORGANIZER_ID', None)
-            PRETIX_EVENT_ID = os.getenv('PRETIX_EVENT_ID', None)
-            PRETIX_CHECKLIST_ID = os.getenv('PRETIX_CHECKLIST_ID', None)
-            PRETIX_TOKEN = os.getenv('PRETIX_TOKEN', None)
+# async def get_flows(conference: models.Conference, page: int, per_page: int, search: str):
+#     offset = (page - 1) * per_page
+#
+#     query = models.Flow.filter(conference=conference).filter(text__icontains=search)
+#
+#     flows = await query.order_by('-created_at').offset(offset).limit(per_page).all()
+#     count = await query.count()
+#
+#     summary = {
+#         'page': page,
+#         'per_page': per_page,
+#         'total_count': count,
+#         'total_pages': count // per_page + 1 if count % per_page else count // per_page,
+#         'previous_page': page - 1 if page > 1 else None,
+#         'next_page': page + 1 if page * per_page < count else None,
+#     }
+#
+#     return {'summary': summary, 'items': [flow.serialize() for flow in flows],
+#             'columns': [
+#                 'created',
+#                 'pretix_order',
+#                 'text',
+#             ]}
 
-            url = f'https://pretix.eu/api/v1/organizers/{PRETIX_ORGANIZER_ID}/events/{PRETIX_EVENT_ID}/checkinlists/{PRETIX_CHECKLIST_ID}/status/'
 
-            log.debug('Creating get request to ' + url)
-
-            res = await client.get(url, headers={'Authorization': f'Token {PRETIX_TOKEN}'})
-            jres = res.json()
-
-            registered_users = jres['items'][0]['position_count'] + jres['items'][1]['position_count']
-            attendees = jres['items'][0]['checkin_count'] + jres['items'][1]['checkin_count']
-
-        except Exception as e:
-            log.critical(f'Error getting info from pretix')
-
-    from tortoise.queryset import Q
-
-    flt = Q(Q(conference=conference), Q(Q(registered_in_open_con_app=True), Q(registered_from_device_type__isnull=False), join_type='OR'), join_type='AND')
-
-    return [
-        {'name': 'Registered users', 'value': registered_users},
-        {'name': 'Attendees', 'value': attendees},
-        {'name': 'SFSCON app users', 'value': await models.PretixOrder.filter(flt).count()},
-        {'name': 'Organisations', 'value': len(organizations)},
-        {'name': 'Total bookmarks', 'value': await models.Bookmark.filter(event_session__conference=conference).prefetch_related('event_session').count()},
-        {'name': 'Ratings received', 'value': await models.Star.filter(event_session__conference=conference).prefetch_related('event_session').count()}
-    ]
+# async def get_dashboard(acronym: str):
+#     conference = await get_conference_by_acronym(acronym=acronym)
+#
+#     organizations = set()
+#     for pretix_order in await models.PretixOrder.filter(conference=conference).all():
+#         if pretix_order.organization:
+#             org = pretix_order.organization.strip().lower()
+#             organizations.add(org)
+#
+#     registered_users = 'N/A'
+#     async with httpx.AsyncClient() as client:
+#         try:
+#             PRETIX_ORGANIZER_ID = os.getenv('PRETIX_ORGANIZER_ID', None)
+#             PRETIX_EVENT_ID = os.getenv('PRETIX_EVENT_ID', None)
+#             PRETIX_CHECKLIST_ID = os.getenv('PRETIX_CHECKLIST_ID', None)
+#             PRETIX_TOKEN = os.getenv('PRETIX_TOKEN', None)
+#
+#             url = f'https://pretix.eu/api/v1/organizers/{PRETIX_ORGANIZER_ID}/events/{PRETIX_EVENT_ID}/checkinlists/{PRETIX_CHECKLIST_ID}/status/'
+#
+#             log.debug('Creating get request to ' + url)
+#
+#             res = await client.get(url, headers={'Authorization': f'Token {PRETIX_TOKEN}'})
+#             jres = res.json()
+#
+#             registered_users = jres['items'][0]['position_count'] + jres['items'][1]['position_count']
+#             attendees = jres['items'][0]['checkin_count'] + jres['items'][1]['checkin_count']
+#
+#         except Exception as e:
+#             log.critical(f'Error getting info from pretix')
+#
+#     from tortoise.queryset import Q
+#
+#     flt = Q(Q(conference=conference), Q(Q(registered_in_open_con_app=True), Q(registered_from_device_type__isnull=False), join_type='OR'), join_type='AND')
+#
+#     return [
+#         {'name': 'Registered users', 'value': registered_users},
+#         {'name': 'Attendees', 'value': attendees},
+#         {'name': 'SFSCON app users', 'value': await models.PretixOrder.filter(flt).count()},
+#         {'name': 'Organisations', 'value': len(organizations)},
+#         {'name': 'Total bookmarks', 'value': await models.Bookmark.filter(event_session__conference=conference).prefetch_related('event_session').count()},
+#         {'name': 'Ratings received', 'value': await models.Star.filter(event_session__conference=conference).prefetch_related('event_session').count()}
+#     ]
