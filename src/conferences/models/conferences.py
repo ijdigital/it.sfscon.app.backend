@@ -216,139 +216,140 @@ class ConferenceLecturer(Model):
             "sessions": [str(s.id) for s in self.event_sessions] if self.event_sessions else []}
 
 
-class PretixOrder(Model):
-    class Meta:
-        table = "conferences_pretix_orders"
-        unique_together = (('id_pretix_order', 'conference'),)
+# class PretixOrder(Model):
+#     class Meta:
+#         table = "conferences_pretix_orders"
+#         unique_together = (('id_pretix_order', 'conference'),)
+#
+#     id = fields.UUIDField(pk=True)
+#     conference = fields.ForeignKeyField('models.Conference')
+#     id_pretix_order = fields.CharField(max_length=32, index=True)
+#
+#     first_name = fields.CharField(max_length=255, null=True, index=True)
+#     last_name = fields.CharField(max_length=255, null=True, index=True)
+#     organization = fields.CharField(max_length=255, null=True, index=True)
+#     email = fields.CharField(max_length=255, null=True, index=True)
+#     secret = fields.TextField()
+#     secret_per_sub_event = fields.JSONField(null=True)
+#
+#     push_notification_token = fields.CharField(max_length=64, null=True)
+#
+#     registered_in_open_con_app = fields.BooleanField(default=None, null=True)
+#
+#     registered_from_device_type = fields.CharField(max_length=32, null=True, index=True)
+#
+#     nr_printed_labels = fields.IntField(default=0)
+#
+#     created = fields.DatetimeField(auto_now_add=True, null=True)
+#
+#     def __str__(self):
+#         return f"{self.first_name} {self.last_name} <{self.email}> ({self.organization})"
+#
+#     def serialize(self):
+#         return {'first_name': self.first_name,
+#                 'last_name': self.last_name,
+#                 'organization': self.organization,
+#                 'email': self.email,
+#                 'pretix_order': self.id_pretix_order,
+#                 'has_app': self.registered_in_open_con_app or self.registered_from_device_type is not None}
+#
+#
+# class Bookmark(Model):
+#     class Meta:
+#         table = "conferences_bookmarks"
+#         unique_together = (('pretix_order', 'event_session'),)
+#
+#     id = fields.UUIDField(pk=True)
+#     pretix_order = fields.ForeignKeyField('models.PretixOrder')
+#     event_session = fields.ForeignKeyField('models.EventSession', related_name='bookmarks')
+#     created = fields.DatetimeField(auto_now_add=True)
+#
+#
+# class StarredSession(Model):
+#     class Meta:
+#         table = "conferences_starred_sessions"
+#
+#     id = fields.UUIDField(pk=True)
+#     event_session = fields.OneToOneField('models.EventSession', related_name='starred_session', index=True)
+#
+#     nr_votes = fields.IntField()
+#     total_stars = fields.IntField()
+#     avg_stars = fields.DecimalField(max_digits=3, decimal_places=2)
+#
+#
+# class Star(Model):
+#     class Meta:
+#         table = "conferences_stars"
+#         unique_together = (('pretix_order', 'event_session'),)
+#
+#     id = fields.UUIDField(pk=True)
+#     pretix_order = fields.ForeignKeyField('models.PretixOrder')
+#     event_session = fields.ForeignKeyField('models.EventSession')
+#     created = fields.DatetimeField(auto_now_add=True)
+#     stars = fields.IntField()
+#
+#
+# class PushNotificationQueue(Model):
+#     class Meta:
+#         table = "conferences_push_notification_queue"
+#
+#     id = fields.UUIDField(pk=True)
+#     created = fields.DatetimeField(auto_now_add=True)
+#     sent = fields.DatetimeField(null=True)
+#
+#     attempt = fields.IntField(default=0)
+#     last_response = fields.TextField(null=True)
+#
+#     pretix_order = fields.ForeignKeyField('models.PretixOrder')
+#
+#     subject = fields.TextField()
+#     message = fields.TextField()
+#
 
-    id = fields.UUIDField(pk=True)
-    conference = fields.ForeignKeyField('models.Conference')
-    id_pretix_order = fields.CharField(max_length=32, index=True)
-
-    first_name = fields.CharField(max_length=255, null=True, index=True)
-    last_name = fields.CharField(max_length=255, null=True, index=True)
-    organization = fields.CharField(max_length=255, null=True, index=True)
-    email = fields.CharField(max_length=255, null=True, index=True)
-    secret = fields.TextField()
-    secret_per_sub_event = fields.JSONField(null=True)
-
-    push_notification_token = fields.CharField(max_length=64, null=True)
-
-    registered_in_open_con_app = fields.BooleanField(default=None, null=True)
-
-    registered_from_device_type = fields.CharField(max_length=32, null=True, index=True)
-
-    nr_printed_labels = fields.IntField(default=0)
-
-    created = fields.DatetimeField(auto_now_add=True, null=True)
-
-    def __str__(self):
-        return f"{self.first_name} {self.last_name} <{self.email}> ({self.organization})"
-
-    def serialize(self):
-        return {'first_name': self.first_name,
-                'last_name': self.last_name,
-                'organization': self.organization,
-                'email': self.email,
-                'pretix_order': self.id_pretix_order,
-                'has_app': self.registered_in_open_con_app or self.registered_from_device_type is not None}
-
-
-class Bookmark(Model):
-    class Meta:
-        table = "conferences_bookmarks"
-        unique_together = (('pretix_order', 'event_session'),)
-
-    id = fields.UUIDField(pk=True)
-    pretix_order = fields.ForeignKeyField('models.PretixOrder')
-    event_session = fields.ForeignKeyField('models.EventSession', related_name='bookmarks')
-    created = fields.DatetimeField(auto_now_add=True)
-
-
-class StarredSession(Model):
-    class Meta:
-        table = "conferences_starred_sessions"
-
-    id = fields.UUIDField(pk=True)
-    event_session = fields.OneToOneField('models.EventSession', related_name='starred_session', index=True)
-
-    nr_votes = fields.IntField()
-    total_stars = fields.IntField()
-    avg_stars = fields.DecimalField(max_digits=3, decimal_places=2)
-
-
-class Star(Model):
-    class Meta:
-        table = "conferences_stars"
-        unique_together = (('pretix_order', 'event_session'),)
-
-    id = fields.UUIDField(pk=True)
-    pretix_order = fields.ForeignKeyField('models.PretixOrder')
-    event_session = fields.ForeignKeyField('models.EventSession')
-    created = fields.DatetimeField(auto_now_add=True)
-    stars = fields.IntField()
-
-
-class PushNotificationQueue(Model):
-    class Meta:
-        table = "conferences_push_notification_queue"
-
-    id = fields.UUIDField(pk=True)
-    created = fields.DatetimeField(auto_now_add=True)
-    sent = fields.DatetimeField(null=True)
-
-    attempt = fields.IntField(default=0)
-    last_response = fields.TextField(null=True)
-
-    pretix_order = fields.ForeignKeyField('models.PretixOrder')
-
-    subject = fields.TextField()
-    message = fields.TextField()
-
-
-class Entrance(Model):
-    class Meta:
-        table = "conferences_entrances"
-
-    id = fields.UUIDField(pk=True)
-    name = fields.TextField()
-    conference = fields.ForeignKeyField('models.Conference')
-
-
-class PretixQRScan(Model):
-    class Meta:
-        table = "conferences_pretix_qr_scans"
-
-    id = fields.UUIDField(pk=True)
-    created = fields.DatetimeField(auto_now_add=True)
-
-    pretix_secret = fields.TextField()
-    pretix_order = fields.ForeignKeyField('models.PretixOrder', null=True)
-
-    label_print_confirmed = fields.BooleanField(default=False)
-    label_printed = fields.DatetimeField(default=None, null=True)
-
-
-class Flow(Model):
-    class Meta:
-        table = "conferences_flows"
-
-    id = fields.UUIDField(pk=True)
-    conference = fields.ForeignKeyField('models.Conference', null=True, index=True)
-
-    created = fields.DatetimeField(auto_now_add=True)
-
-    pretix_order = fields.ForeignKeyField('models.PretixOrder', null=True, index=True)
-
-    text = fields.TextField(null=True)
-    data = fields.JSONField(null=True)
-
-    def serialize(self):
-        return {
-            # 'id': str(self.id),
-            # 'conference': str(self.conference_id) if self.conference else None,
-            'created': self.created,
-            'pretix_order': str(self.pretix_order_id) if self.pretix_order else None,
-            'text': self.text,
-            # 'data': self.data
-        }
+# class Entrance(Model):
+#     class Meta:
+#         table = "conferences_entrances"
+#
+#     id = fields.UUIDField(pk=True)
+#     name = fields.TextField()
+#     conference = fields.ForeignKeyField('models.Conference')
+#
+#
+# class PretixQRScan(Model):
+#     class Meta:
+#         table = "conferences_pretix_qr_scans"
+#
+#     id = fields.UUIDField(pk=True)
+#     created = fields.DatetimeField(auto_now_add=True)
+#
+#     pretix_secret = fields.TextField()
+#     pretix_order = fields.ForeignKeyField('models.PretixOrder', null=True)
+#
+#     label_print_confirmed = fields.BooleanField(default=False)
+#     label_printed = fields.DatetimeField(default=None, null=True)
+#
+#
+# class Flow(Model):
+#     class Meta:
+#         table = "conferences_flows"
+#
+#     id = fields.UUIDField(pk=True)
+#     conference = fields.ForeignKeyField('models.Conference', null=True, index=True)
+#
+#     created = fields.DatetimeField(auto_now_add=True)
+#
+#     pretix_order = fields.ForeignKeyField('models.PretixOrder', null=True, index=True)
+#
+#     text = fields.TextField(null=True)
+#     data = fields.JSONField(null=True)
+#
+#     def serialize(self):
+#         return {
+#             # 'id': str(self.id),
+#             # 'conference': str(self.conference_id) if self.conference else None,
+#             'created': self.created,
+#             'pretix_order': str(self.pretix_order_id) if self.pretix_order else None,
+#             'text': self.text,
+#             # 'data': self.data
+#         }
+#
