@@ -306,15 +306,15 @@ class ConferenceLecturer(Model):
 #     message = fields.TextField()
 #
 
-# class Entrance(Model):
-#     class Meta:
-#         table = "conferences_entrances"
-#
-#     id = fields.UUIDField(pk=True)
-#     name = fields.TextField()
-#     conference = fields.ForeignKeyField('models.Conference')
-#
-#
+class Entrance(Model):
+    class Meta:
+        table = "conferences_entrances"
+
+    id = fields.UUIDField(pk=True)
+    name = fields.TextField()
+    conference = fields.ForeignKeyField('models.Conference')
+
+
 # class PretixQRScan(Model):
 #     class Meta:
 #         table = "conferences_pretix_qr_scans"
