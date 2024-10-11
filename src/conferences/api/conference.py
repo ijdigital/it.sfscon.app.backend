@@ -18,6 +18,10 @@ import conferences.controller as controller
 
 app = get_app()
 
+from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/sfs2024/authorize")
 
 origins = ["*"]
 
@@ -26,12 +30,36 @@ app.add_middleware(
     allow_origins=origins,
 )
 
+@app.get('/api/authorize')
+async def create_authorization():
+
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'secret')
+
+    payload = {
+        'username': str(uuid.uuid4()),
+        'iat': datetime.datetime.utcnow(),
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(days=31),
+    }
+
+    encoded_jwt = jwt.encode(payload, JWT_SECRET_KEY, algorithm='HS256')
+
+    return {'jwt': encoded_jwt}
+
+
+
+@app.get('/api/conferences/sfs2024/me')
+async def get_me(token: str = Depends(oauth2_scheme)):
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
+    decoded = jwt.decode(token, JWT_SECRET_KEY, algorithms=['HS256'])
+    return decoded
+    
+
 @app.get('/api/conferences', )
 async def get_conferences():
     return await controller.get_all_conferences()
 
 
-@app.get('/api/conferences/{id_conference}', )
+@app.get('/api/conferences-x/{id_conference}', )
 async def get_single_conference(id_conference: uuid.UUID):
     return await controller.opencon_serialize(await controller.get_conference(id_conference=id_conference))
 
@@ -114,29 +142,4 @@ async def notify_5_minutes_before_start(acronym: str, request: ConferenceNotify5
     return await controller.send_notifications_5_minute_before_start(conference=conference, now_time=request.now_time, test_only=request.test_only)
 
 
-@app.get('/api/sfs2024/authorize')
-async def create_authorization():
 
-    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'secret')
-
-    payload = {
-        'username': str(uuid.uuid4()),
-        'iat': datetime.datetime.utcnow(),
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(days=31),
-    }
-
-    encoded_jwt = jwt.encode(payload, JWT_SECRET_KEY, algorithm='HS256')
-
-    return {'jwt': encoded_jwt}
-
-
-from fastapi.security import OAuth2PasswordBearer
-from fastapi import Depends
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/sfs2024/authorize")
-
-@app.get('/api/sfs2024/me')
-async def get_me(token: str = Depends(oauth2_scheme)):
-    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
-    decoded = jwt.decode(token, JWT_SECRET_KEY, algorithms=['HS256'])
-    return decoded
