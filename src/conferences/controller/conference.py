@@ -138,6 +138,11 @@ async def add_sessions(conference, content, tracks_by_name):
     await models.ConferenceLecturer.filter(conference=conference).delete()
 
     def get_or_raise(key, obj):
+
+        if key == '@unique_id':
+            if key not in obj:
+                return obj['@id']
+
         if key not in obj:
             raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                                 detail=f"{key.upper()}_NOT_FOUND")
@@ -410,7 +415,11 @@ async def add_conference(content: dict, source_uri: str, force: bool = False):
     content_tracks = content.get('tracks', [])
 
     tracks_by_name = await db_add_or_update_tracks(conference, content_tracks)
-    changes = await add_sessions(conference, content, tracks_by_name)
+    try:
+        changes = await add_sessions(conference, content, tracks_by_name)
+    except Exception as e:
+        raise
+
     if created:
         changes = {}
 
@@ -451,8 +460,6 @@ async def get_conference_sessions(conference_acronym):
     for day in serialized['conference']['idx']['ordered_sessions_by_days']:
         for id_session in serialized['conference']['idx']['ordered_sessions_by_days'][day]:
             session = serialized['conference']['db']['sessions'][id_session]
-
-
 
             sessions.append({
                 'event': session['title'],
@@ -659,7 +666,6 @@ async def get_csv_talks(acronym: str):
     for rpe in await models.StarredSession.filter(event_session__conference=conference).prefetch_related('event_session').all():
         rate_per_event[str(rpe.event_session_id)] = rpe.total_stars / rpe.nr_votes if rpe.nr_votes else ''
 
-
     with open(tmp_file, 'wt') as f:
 
         writer = csv.writer(f)
@@ -673,14 +679,14 @@ async def get_csv_talks(acronym: str):
                                  session['date'],
                                  bookmark_per_event[str(id_session)] if id_session in bookmark_per_event else 0,
                                  rate_per_event[str(id_session)] if str(id_session) in rate_per_event else ''
-                # random.randint(0, 100),
+                                 # random.randint(0, 100),
                                  # round(random.randint(0, 500) / 100, 2)
                                  ])
 
     return tmp_file
 
 
-async def add_flow(conference: models.Conference | None, pretix_order: models.PretixOrder | None, text: str | None, data: dict | None = None):
+async def add_flow(conference: models.Conference, pretix_order: models.PretixOrder, text: str, data: dict = None):
     if not text and not data:
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                             detail="TEXT_OR_DATA_MUST_BE_SET")
