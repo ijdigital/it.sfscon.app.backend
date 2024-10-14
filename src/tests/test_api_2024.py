@@ -3,6 +3,7 @@
 
 import os
 import pprint
+import unittest
 import uuid
 import json
 
@@ -168,7 +169,6 @@ class Test2024(BaseAPITest):
             assert 'bookmarks' in res
             assert res['bookmarks'] == []
 
-
     async def test_rating(self):
         # ...
         async with AsyncClient(app=self.app, base_url="http://test") as ac:
@@ -261,3 +261,43 @@ class Test2024(BaseAPITest):
                                                           id_2nd_session: [1.0, 1]}
 
             assert res['ratings']['my_rate_by_session'] == {id_1st_session: 2}
+
+
+class TestJsonData(BaseAPITest):
+    async def setup(self):
+
+        current_file_path = os.path.dirname(os.path.realpath(__file__))
+        with open(current_file_path + '/assets/sfs2024.10.14.json', 'r') as f:
+            self.data = json.load(f)
+        assert self.data
+
+        assert 'day' in self.data
+        self.sessions = []
+        for day in self.data['day']:
+            assert 'room' in day
+            assert isinstance(day['room'], list)
+            for room in day['room']:
+                assert 'event' in room
+                assert isinstance(room['event'], list) or isinstance(room['event'], dict)
+
+                if isinstance(room['event'], list):
+                    for event in room['event']:
+                        self.sessions.append(event)
+                else:
+                    self.sessions.append(room['event'])
+
+    async def test(self):
+        ...
+        unique_ids = set()
+        print()
+        print('-'*100)
+
+        for session in self.sessions:
+            if '@unique_id' not in session:
+                print('NO UNQIUE_ID:', session['title'])
+                continue
+            if session['@unique_id'] in unique_ids:
+                print('DUPLICATE:', session['title'])
+
+            unique_ids.add(session['@unique_id'])
+

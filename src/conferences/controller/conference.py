@@ -131,7 +131,11 @@ async def fetch_xml_content(use_local_xml=False):
             with open('/tmp/last_saved_xml.xml', 'wt') as f:
                 f.write(res.text)
 
-            return await convert_xml_to_dict(res.text)
+            dict_content = await convert_xml_to_dict(res.text)
+            with open('/tmp/last_saved_json.json', 'wt') as f:
+                f.write(json.dumps(dict_content, ensure_ascii=False, indent=1))
+
+            return dict_content
         except Exception as e:
             log.critical(f'Error fetching XML from {XML_URL} :: {str(e)}')
             raise
