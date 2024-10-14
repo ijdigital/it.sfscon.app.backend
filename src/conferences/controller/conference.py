@@ -150,20 +150,26 @@ async def add_sessions(conference, content, tracks_by_name):
 
     def get_or_raise(key, obj):
 
-        # TODO: Ubi ovo kad srede unique  - id obrisi od 143-145 linije
-        if key == '@unique_id':
-            # if key not in obj:
-            return obj['@id']
+        if not '@unique_id' in obj:
+            return None
 
-        if key not in obj:
-            raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
-                                detail=f"{key.upper()}_NOT_FOUND")
-        return obj[key]
+        return obj['@unique_id']
+
+        # # TODO: Ubi ovo kad srede unique  - id obrisi od 143-145 linije
+        # if key == '@unique_id':
+        #     # if key not in obj:
+        #     return obj['@id']
+        #
+        # if key not in obj:
+        #     raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+        #                         detail=f"{key.upper()}_NOT_FOUND")
+        # return obj[key]
 
     # test for duplicated unique_id
 
     events_by_unique_id = {}
 
+    all_uids = set()
     for day in content['day']:
 
         for room in day['room']:
@@ -174,12 +180,21 @@ async def add_sessions(conference, content, tracks_by_name):
                 if type(event) != dict:
                     continue
                 unique_id = get_or_raise('@unique_id', event)
+                if not unique_id:
+                    continue
+
+                if unique_id in all_uids:
+                    continue
+
+                all_uids.add(unique_id)
+
                 if unique_id == '2023day1event5':
                     ...
                 if unique_id in events_by_unique_id:
                     raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail=f"EVENT_UNIQUE_ID_ALREADY_EXISTS:{unique_id}")
                 events_by_unique_id[unique_id] = unique_id
 
+    all_uids = set()
     for day in content['day']:
 
         date = day.get('@date', None)
@@ -228,6 +243,13 @@ async def add_sessions(conference, content, tracks_by_name):
                 if type(event) != dict:
                     continue
                 unique_id = get_or_raise('@unique_id', event)
+                if not unique_id:
+                    continue
+
+                if unique_id in all_uids:
+                    continue
+
+                all_uids.add(unique_id)
 
                 title = get_or_raise('title', event)
                 slug = slugify.slugify(title)
