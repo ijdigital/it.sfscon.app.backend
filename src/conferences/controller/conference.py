@@ -150,10 +150,10 @@ async def add_sessions(conference, content, tracks_by_name):
 
     def get_or_raise(key, obj):
 
-        if not '@unique_id' in obj:
+        if key=='@unique_id' and not '@unique_id' in obj:
             return None
 
-        return obj['@unique_id']
+        return obj[key]
 
         # # TODO: Ubi ovo kad srede unique  - id obrisi od 143-145 linije
         # if key == '@unique_id':
