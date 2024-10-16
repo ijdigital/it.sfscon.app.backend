@@ -154,7 +154,7 @@ class EventSession(Model):
             "start": self.start_date.strftime("%Y-%m-%d %H:%M:%S"),
             "duration": self.duration,
             "title": self.title,
-            "abstract": None,
+            "abstract": self.abstract,
             "description": self.description,
             "bookmarkable": self.bookmarkable,
             "can_share": True,

@@ -51,6 +51,7 @@ class TestAPIBasic(BaseAPITest):
             response = await ac.post("/api/import-xml", json={'use_local_xml': False})
             assert response.status_code == 200
 
+
     async def test_import_xml_mockuped_result(self):
         async with AsyncClient(app=self.app, base_url="http://test") as ac:
             response = await ac.post("/api/import-xml", json={'use_local_xml': True})
@@ -67,6 +68,7 @@ class TestAPIBasic(BaseAPITest):
 
             response = await ac.get("/api/conference", headers={"Authorization": f"Bearer {token}"})
             assert response.status_code == 200
+
 
 
 class Test2024(BaseAPITest):
@@ -261,6 +263,18 @@ class Test2024(BaseAPITest):
                                                           id_2nd_session: [1.0, 1]}
 
             assert res['ratings']['my_rate_by_session'] == {id_1st_session: 2}
+
+    async def test_abstract(self):
+
+        nr_abstracts = 0
+        for id_session in self.sessions:
+            session = self.sessions[id_session]
+            assert 'abstract' in session
+            if session['abstract']:
+                nr_abstracts += 1
+
+        assert nr_abstracts > 0
+        print(nr_abstracts)
 
 
 class TestJsonData(BaseAPITest):
