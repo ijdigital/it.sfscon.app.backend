@@ -711,7 +711,7 @@ async def opencon_serialize_anonymouse(user_id, conference, last_updated=None):
     #         conference_avg_rating['rates_by_session'][str(session.id)] = [session.starred_session.avg_stars,
     #                                                                       session.starred_session.nr_votes]
 
-    with open(current_file_dir + '/../../tests/assets/sfscon2023sponsors.yaml', 'r') as f:
+    with open(current_file_dir + '/../../tests/assets/sfscon2024sponsors.yaml', 'r') as f:
         db['sponsors'] = yaml.load(f, yaml.Loader)
 
     re_ordered_lecturers = {}
