@@ -276,6 +276,13 @@ class Test2024(BaseAPITest):
         assert nr_abstracts > 0
         print(nr_abstracts)
 
+    async def test_title(self):
+
+        for id_session in self.sessions:
+            session = self.sessions[id_session]
+            assert 'title' in session
+            assert session['title']
+            print(session['title'])
 
 class TestJsonData(BaseAPITest):
     async def setup(self):
