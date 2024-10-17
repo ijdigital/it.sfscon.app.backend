@@ -127,6 +127,8 @@ class EventSession(Model):
     abstract = fields.TextField(null=True)
     description = fields.TextField(null=True)
 
+    url = fields.TextField(null=True)
+
     bookmarkable = fields.BooleanField(default=True)
     rateable = fields.BooleanField(default=True)
 
@@ -149,7 +151,7 @@ class EventSession(Model):
         return {
             'id': str(self.id),
             'unique_id': self.unique_id,
-            'share_link': "https://sfscon.it",
+            'share_link': self.url,
             "date": self.start_date.strftime("%Y-%m-%d"),
             "start": self.start_date.strftime("%Y-%m-%d %H:%M:%S"),
             "duration": self.duration,

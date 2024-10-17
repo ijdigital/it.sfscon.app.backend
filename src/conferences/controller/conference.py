@@ -252,6 +252,11 @@ async def add_sessions(conference, content, tracks_by_name):
                 all_uids.add(unique_id)
 
                 title = get_or_raise('title', event)
+                try:
+                    url = get_or_raise('url', event)
+                except Exception as e:
+                    url = None
+                    
                 slug = slugify.slugify(title)
                 track_name = event.get('track', None)
                 if type(track_name) == dict:
@@ -313,6 +318,7 @@ async def add_sessions(conference, content, tracks_by_name):
                     if not db_event:
                         db_event = await models.EventSession.create(conference=conference,
                                                                     title=title,
+                                                                    url=url,
                                                                     abstract=abstract,
                                                                     description=description,
                                                                     unique_id=unique_id,
