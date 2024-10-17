@@ -426,7 +426,7 @@ async def add_sessions(conference, content, tracks_by_name):
                                 log.critical(f'Error adding person {person["#text"]} :: {str(e)}')
                                 raise
                         else:
-                            await db_person.update_from_dict({'bio': bio,
+                            await db_person.update_from_dict({'bio': remove_html(bio),
                                                               'social_networks': social_networks,
                                                               'first_name': first_name,
                                                               'last_name': last_name,
