@@ -282,7 +282,9 @@ class Test2024(BaseAPITest):
             session = self.sessions[id_session]
             assert 'title' in session
             assert session['title']
-            print(session['title'])
+            print(session['duration'], session['title'])
+
+
 
 class TestJsonData(BaseAPITest):
     async def setup(self):
