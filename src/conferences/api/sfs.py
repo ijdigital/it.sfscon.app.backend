@@ -68,11 +68,14 @@ async def get_me(token: str = Depends(oauth2_scheme)):
 
 
 class ImportConferenceRequest(pydantic.BaseModel):
-    use_local_xml: Optional[Union[bool, None]] = False
+    # use_local_xml: Optional[Union[bool, None]] = False
+    use_local_xml: Optional[bool] = False
 
 
 @app.post('/api/import-xml', response_model=ConferenceImportRequestResponse, )
-async def import_conference_xml_api(request: ImportConferenceRequest):
+async def import_conference_xml_api(request: ImportConferenceRequest = None):
+    if request is None:
+        request = ImportConferenceRequest()
 
     content = await controller.fetch_xml_content(request.use_local_xml)
     XML_URL = os.getenv("XML_URL", None)

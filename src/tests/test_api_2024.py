@@ -48,7 +48,7 @@ class TestAPIBasic(BaseAPITest):
 
     async def test_import_xml(self):
         async with AsyncClient(app=self.app, base_url="http://test") as ac:
-            response = await ac.post("/api/import-xml", json={'use_local_xml': False})
+            response = await ac.post("/api/import-xml") #, json={'use_local_xml': False})
             assert response.status_code == 200
 
 

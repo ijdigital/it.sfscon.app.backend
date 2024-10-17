@@ -322,6 +322,7 @@ async def add_sessions(conference, content, tracks_by_name):
                                                                     room=db_room,
                                                                     str_start_time=str_start_time,
                                                                     start_date=event_start,
+                                                                    event_duration=event_duration,
                                                                     end_date=event_start + datetime.timedelta(seconds=event_duration) if event_start and event_duration else None,
                                                                     )
 
