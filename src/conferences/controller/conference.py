@@ -256,7 +256,7 @@ async def add_sessions(conference, content, tracks_by_name):
                     url = get_or_raise('url', event)
                 except Exception as e:
                     url = None
-                    
+
                 slug = slugify.slugify(title)
                 track_name = event.get('track', None)
                 if type(track_name) == dict:

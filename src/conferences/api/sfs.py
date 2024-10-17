@@ -91,6 +91,8 @@ async def import_conference_xml_api(request: ImportConferenceRequest = None):
 
 @app.get('/api/conference')
 async def get_current_conference(last_updated: Optional[str] = Query(default=None), token: str = Depends(oauth2_scheme)):
+    return verify_token(token)
+
     decoded = verify_token(token)
     return await controller.opencon_serialize_anonymouse(decoded['id_user'], await controller.get_current_conference(), last_updated=last_updated)
 
