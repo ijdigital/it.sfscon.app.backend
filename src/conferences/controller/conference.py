@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # SPDX-FileCopyrightText: 2023 Digital CUBE <https://digitalcube.rs>
-
+import re
 import os
 import csv
 import yaml
@@ -106,6 +106,24 @@ async def convert_xml_to_dict(xml_text):
     content = xmltodict.parse(xml_text, encoding='utf-8')
     return content['schedule']
 
+
+def remove_html(text):
+    if not text:
+        return None
+
+    for t in ('<br>', '<br/>', '<br />', '<p>'):
+        text = text.replace(t, '\n')
+
+    # Define a regular expression pattern to match HTML tags
+    pattern = re.compile('<.*?>')
+
+    # Use the pattern to remove all HTML tags
+    clean_text = re.sub(pattern, '', text)
+
+    # Remove any extra whitespace
+    clean_text = ' '.join(clean_text.split())
+
+    return clean_text
 
 async def fetch_xml_content(use_local_xml=False):
 
@@ -320,7 +338,7 @@ async def add_sessions(conference, content, tracks_by_name):
                                                                     title=title,
                                                                     url=url,
                                                                     abstract=abstract,
-                                                                    description=description,
+                                                                    description=remove_html(description),
                                                                     unique_id=unique_id,
                                                                     bookmarkable=bookmarkable,
                                                                     rateable=rateable,
