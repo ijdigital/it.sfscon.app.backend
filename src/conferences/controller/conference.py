@@ -413,7 +413,7 @@ async def add_sessions(conference, content, tracks_by_name):
                             try:
                                 db_person = await models.ConferenceLecturer.create(conference=conference,
                                                                                    external_id=pid,
-                                                                                   bio=bio,
+                                                                                   bio=remove_html(bio),
                                                                                    social_networks=social_networks,
                                                                                    first_name=first_name,
                                                                                    last_name=last_name,
