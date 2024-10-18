@@ -108,11 +108,27 @@ async def convert_xml_to_dict(xml_text):
 
 
 def remove_html(text):
+    # return text
+
     if not text:
         return None
 
-    for t in ('<br>', '<br/>', '<br />', '<p>'):
+
+    for t in ('<br>', '<br/>', '<br />', '<p>', '</p>'):
         text = text.replace(t, '\n')
+
+    for t in ('<b>', '<B>'):
+        if t in text:
+            text = text.replace(t, '|Text style=styles.bold|')
+
+    for t in ('<em>', '<EM>'):
+        if t in text:
+            text = text.replace(t, '|Text style=styles.italic|')
+
+    for t in ('</b>', '</B>', '<em>', '<EM>'):
+        if t in text:
+            text = text.replace(t, '|/Text|')
+
 
     # Define a regular expression pattern to match HTML tags
     pattern = re.compile('<.*?>')
@@ -120,13 +136,16 @@ def remove_html(text):
     # Use the pattern to remove all HTML tags
     clean_text = re.sub(pattern, '', text)
 
+    clean_text = clean_text.replace('|Text style=styles.bold|', '<Text style=styles.bold>')
+    clean_text = clean_text.replace('|Text style=styles.italic|', '<Text style=styles.italic>')
+    clean_text = clean_text.replace('|/Text|', '</Text>')
     # Remove any extra whitespace
     clean_text = ' '.join(clean_text.split())
 
     return clean_text
 
-async def fetch_xml_content(use_local_xml=False):
 
+async def fetch_xml_content(use_local_xml=False):
     if use_local_xml:
         current_file_folder = os.path.dirname(os.path.realpath(__file__))
         if use_local_xml:
@@ -168,7 +187,7 @@ async def add_sessions(conference, content, tracks_by_name):
 
     def get_or_raise(key, obj):
 
-        if key=='@unique_id' and not '@unique_id' in obj:
+        if key == '@unique_id' and not '@unique_id' in obj:
             return None
 
         return obj[key]
@@ -589,6 +608,7 @@ async def get_current_conference():
                             detail="CONFERENCE_NOT_FOUND")
     return conference
 
+
 #
 # async def get_conference(id_conference: uuid.UUID):
 #     conference = await models.Conference.filter(id=id_conference).prefetch_related('tracks',
@@ -643,7 +663,6 @@ async def bookmark_session(id_user, id_session):
 
 
 async def rate_session(id_user, id_session, rate):
-
     if rate < 1 or rate > 5:
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                             detail="RATE_NOT_VALID")
@@ -679,7 +698,6 @@ async def rate_session(id_user, id_session, rate):
 
 
 async def opencon_serialize_anonymouse(user_id, conference, last_updated=None):
-
     next_try_in_ms = 3000000
     db_last_updated = str(tortoise.timezone.make_naive(conference.last_updated))
 
@@ -690,10 +708,11 @@ async def opencon_serialize_anonymouse(user_id, conference, last_updated=None):
         if session.anonymous_rates.related_objects:
             all_rates_for_session = [r.rate for r in session.anonymous_rates.related_objects]
             if all_rates_for_session:
-                conference_avg_rating['rates_by_session'][str(session.id)] = [sum(all_rates_for_session)/len(all_rates_for_session), len(all_rates_for_session)]  # [session.anonymous_rates.avg_stars,
+                conference_avg_rating['rates_by_session'][str(session.id)] = [sum(all_rates_for_session) / len(all_rates_for_session),
+                                                                              len(all_rates_for_session)]  # [session.anonymous_rates.avg_stars,
             # session.anonymous_rates.nr_votes]
 
-    user = await models.UserAnonymous.filter(id=user_id).prefetch_related('bookmarks','rates').get_or_none()
+    user = await models.UserAnonymous.filter(id=user_id).prefetch_related('bookmarks', 'rates').get_or_none()
 
     bookmarks = [bookmark.session_id for bookmark in user.bookmarks.related_objects]
     conference_avg_rating['my_rate_by_session'] = {str(rate.session_id): rate.rate for rate in user.rates.related_objects}
@@ -754,7 +773,6 @@ async def opencon_serialize_anonymouse(user_id, conference, last_updated=None):
                            'idx': idx
                            }
             }
-
 
 # REMOVE
 # async def opencon_serialize(conference, last_updated=None):
