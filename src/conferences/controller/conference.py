@@ -119,11 +119,11 @@ def remove_html(text):
 
     for t in ('<b>', '<B>'):
         if t in text:
-            text = text.replace(t, '|Text style=styles.bold|')
+            text = text.replace(t, '|Text style={styles.bold}|')
 
     for t in ('<em>', '<EM>'):
         if t in text:
-            text = text.replace(t, '|Text style=styles.italic|')
+            text = text.replace(t, '|Text style={styles.italic}|')
 
     for t in ('</b>', '</B>', '<em>', '<EM>'):
         if t in text:
@@ -136,8 +136,8 @@ def remove_html(text):
     # Use the pattern to remove all HTML tags
     clean_text = re.sub(pattern, '', text)
 
-    clean_text = clean_text.replace('|Text style=styles.bold|', '<Text style=styles.bold>')
-    clean_text = clean_text.replace('|Text style=styles.italic|', '<Text style=styles.italic>')
+    clean_text = clean_text.replace('|Text style={styles.bold}|', '<Text style={styles.bold}>')
+    clean_text = clean_text.replace('|Text style={styles.italic}|', '<Text style={styles.italic}>')
     clean_text = clean_text.replace('|/Text|', '</Text>')
     # Remove any extra whitespace
     clean_text = ' '.join(clean_text.split())
