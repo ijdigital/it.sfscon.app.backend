@@ -125,7 +125,7 @@ def remove_html(text):
         if t in text:
             text = text.replace(t, '|Text style={styles.italic}|')
 
-    for t in ('</b>', '</B>', '<em>', '<EM>'):
+    for t in ('</b>', '</B>', '</em>', '</EM>'):
         if t in text:
             text = text.replace(t, '|/Text|')
 
