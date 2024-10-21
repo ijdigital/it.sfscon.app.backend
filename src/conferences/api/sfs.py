@@ -36,7 +36,7 @@ class ConferenceImportRequestResponse(pydantic.BaseModel):
     changes: dict
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/sfs2024/authorize")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/authorize")
 
 origins = ["*"]
 
@@ -48,10 +48,32 @@ app.add_middleware(
 
 @app.get('/api/authorize')
 async def create_authorization(push_notification_token: Optional[str] = Query(default=None)):
-
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'secret')
 
     id_user = await controller.authorize_user(push_notification_token)
+
+    payload = {
+        'id_user': id_user,
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(days=2 * 365),
+    }
+
+    encoded_jwt = jwt.encode(payload, JWT_SECRET_KEY, algorithm='HS256')
+
+    return {'token': encoded_jwt}
+
+
+class AuthorizeRequest(pydantic.BaseModel):
+    push_notification_token: Optional[None | str] = Query(default=None)
+
+
+@app.post('/api/authorize')
+async def create_authorization_post(request: Optional[None | AuthorizeRequest] = None):
+    if not request:
+        request = AuthorizeRequest()
+
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'secret')
+
+    id_user = await controller.authorize_user(request.push_notification_token)
 
     payload = {
         'id_user': id_user,
@@ -92,11 +114,13 @@ async def import_conference_xml_api(request: ImportConferenceRequest = None):
 
 
 @app.get('/api/conference')
-async def get_current_conference(last_updated: Optional[str] = Query(default=None), token: str = Depends(oauth2_scheme)):
+async def get_current_conference(last_updated: Optional[str] = Query(default=None),
+                                 token: str = Depends(oauth2_scheme)):
     # return verify_token(token)
 
     decoded = verify_token(token)
-    return await controller.opencon_serialize_anonymouse(decoded['id_user'], await controller.get_current_conference(), last_updated=last_updated)
+    return await controller.opencon_serialize_anonymouse(decoded['id_user'], await controller.get_current_conference(),
+                                                         last_updated=last_updated)
 
 
 class RateRequest(pydantic.BaseModel):

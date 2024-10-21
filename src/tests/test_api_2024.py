@@ -39,7 +39,7 @@ class TestAPIBasic(BaseAPITest):
 
     async def test_authorize_user_and_get_conference_expect_404(self):
         async with AsyncClient(app=self.app, base_url="http://test") as ac:
-            response = await ac.get("/api/authorize")
+            response = await ac.post("/api/authorize")
             assert response.status_code == 200
             token = response.json()['token']
 
@@ -62,7 +62,7 @@ class TestAPIBasic(BaseAPITest):
             response = await ac.post("/api/import-xml", json={'use_local_xml': True})
             assert response.status_code == 200
 
-            response = await ac.get("/api/authorize")
+            response = await ac.post("/api/authorize")
             assert response.status_code == 200
             token = response.json()['token']
 
@@ -80,15 +80,15 @@ class Test2024(BaseAPITest):
             response = await ac.post("/api/import-xml", json={'use_local_xml': True})
             assert response.status_code == 200
 
-            response = await ac.get("/api/authorize")
+            response = await ac.post("/api/authorize")
             assert response.status_code == 200
             self.token = response.json()['token']
 
-            response = await ac.get("/api/authorize")
+            response = await ac.post("/api/authorize")
             assert response.status_code == 200
             self.token2 = response.json()['token']
 
-            response = await ac.get("/api/authorize")
+            response = await ac.post("/api/authorize")
             assert response.status_code == 200
             self.token3 = response.json()['token']
 
@@ -296,7 +296,7 @@ class Test2024(BaseAPITest):
 
     async def test_push_notification(self):
         async with AsyncClient(app=self.app, base_url="http://test") as ac:
-            response = await ac.get("/api/authorize", params={'push_notification_token': 'ExponentPushToken[xxxxxxxxxxxxxxxxxxxxx1]'})
+            response = await ac.post("/api/authorize", json={'push_notification_token': 'ExponentPushToken[xxxxxxxxxxxxxxxxxxxxx1]'})
             assert response.status_code == 200
             token = response.json()['token']
 
