@@ -294,6 +294,24 @@ class Test2024(BaseAPITest):
             # assert session['description']
 
 
+    async def test_push_notification(self):
+        async with AsyncClient(app=self.app, base_url="http://test") as ac:
+            response = await ac.get("/api/authorize", params={'push_notification_token': 'ExponentPushToken[xxxxxxxxxxxxxxxxxxxxx1]'})
+            assert response.status_code == 200
+            token = response.json()['token']
+
+            response = await ac.get("/api/me", headers={"Authorization": f"Bearer {token}"})
+            assert response.status_code == 200
+
+            id_1st_session = list(self.sessions.keys())[0]
+            response = await ac.post(f"/api/sessions/{id_1st_session}/bookmarks/toggle", headers={"Authorization": f"Bearer {token}"})
+            assert response.status_code == 200
+            assert response.json() == {'bookmarked': True}
+
+            response = await ac.post("/api/import-xml", json={'use_local_xml': True, 'local_xml_fname': 'sfscon2024.1st_session_moved_for_5_minutes.xml'})
+            assert response.status_code == 200
+
+
 class TestJsonData(BaseAPITest):
     async def setup(self):
 

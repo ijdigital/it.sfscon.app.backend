@@ -47,10 +47,11 @@ app.add_middleware(
 
 
 @app.get('/api/authorize')
-async def create_authorization():
+async def create_authorization(push_notification_token: Optional[str] = Query(default=None)):
+
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'secret')
 
-    id_user = await controller.authorize_user()
+    id_user = await controller.authorize_user(push_notification_token)
 
     payload = {
         'id_user': id_user,
@@ -70,6 +71,7 @@ async def get_me(token: str = Depends(oauth2_scheme)):
 class ImportConferenceRequest(pydantic.BaseModel):
     # use_local_xml: Optional[Union[bool, None]] = False
     use_local_xml: Optional[bool] = False
+    local_xml_fname: Optional[str] = 'sfscon2024.xml'
 
 
 @app.post('/api/import-xml', response_model=ConferenceImportRequestResponse, )
@@ -77,7 +79,7 @@ async def import_conference_xml_api(request: ImportConferenceRequest = None):
     if request is None:
         request = ImportConferenceRequest()
 
-    content = await controller.fetch_xml_content(request.use_local_xml)
+    content = await controller.fetch_xml_content(request.use_local_xml, request.local_xml_fname)
     XML_URL = os.getenv("XML_URL", None)
 
     try:

@@ -6,6 +6,7 @@ import csv
 import yaml
 import uuid
 import json
+import redis
 import httpx
 import random
 import slugify
@@ -113,7 +114,6 @@ def remove_html(text):
     if not text:
         return None
 
-
     for t in ('<br>', '<br/>', '<br />', '<p>', '</p>'):
         text = text.replace(t, '\n')
 
@@ -128,7 +128,6 @@ def remove_html(text):
     for t in ('</b>', '</B>', '</em>', '</EM>'):
         if t in text:
             text = text.replace(t, '|/Text|')
-
 
     # Define a regular expression pattern to match HTML tags
     pattern = re.compile('<.*?>')
@@ -145,11 +144,11 @@ def remove_html(text):
     return clean_text
 
 
-async def fetch_xml_content(use_local_xml=False):
+async def fetch_xml_content(use_local_xml=False, local_xml_fname='sfscon2024.xml'):
     if use_local_xml:
         current_file_folder = os.path.dirname(os.path.realpath(__file__))
         if use_local_xml:
-            with open(current_file_folder + '/../../tests/assets/sfscon2024.xml', 'r') as f:
+            with open(current_file_folder + f'/../../tests/assets/{local_xml_fname}', 'r') as f:
                 return await convert_xml_to_dict(f.read())
 
     XML_URL = os.getenv("XML_URL", None)
@@ -466,6 +465,57 @@ async def add_sessions(conference, content, tracks_by_name):
     return changes
 
 
+async def send_changes_to_bookmakers(conference, changes, test=True):
+    changed_sessions = changes.keys()
+    all_anonymous_bookmarks = await models.AnonymousBookmark.filter(session_id__in=changed_sessions).all()
+
+    notification2token = {}
+
+    from html import unescape
+    def clean_text(text):
+        # Unescape any HTML entities (like &#8211;)
+        text = unescape(text)
+
+        # Remove special characters (adjust regex pattern as needed)
+        cleaned_text = re.sub(r'[^\w\s.,:;!?-]', '', text)
+
+        return cleaned_text
+
+    with redis.Redis(host=os.getenv('REDIS_SERVER'), port=6379, db=0) as r:
+
+        for session in await models.EventSession.filter(id__in=changed_sessions,
+                                                        anonymous_bookmarks__user__push_notification_token__isnull=False
+                                                        ).prefetch_related('anonymous_bookmarks',
+                                                                           'room',
+                                                                           'anonymous_bookmarks__user').all():
+
+            for bookmarks4session in session.anonymous_bookmarks.related_objects:
+                _from = changes[str(session.id)]['old_start_timestamp'].strftime('%m.%d. %H:%M')
+                _to = changes[str(session.id)]['new_start_timestamp'].strftime('%m.%d. %H:%M')
+
+                if changes[str(session.id)]['old_start_timestamp'].date() == changes[str(session.id)]['new_start_timestamp'].date():
+                    _from = changes[str(session.id)]['old_start_timestamp'].strftime('%H:%M')
+                    _to = changes[str(session.id)]['new_start_timestamp'].strftime('%H:%M')
+
+                notification = "Session '" + clean_text(
+                    session.title) + "' has been been rescheduled from " + _from + " to " + _to + f' in room {session.room.name}'
+
+                if bookmarks4session.user.push_notification_token not in notification2token:
+                    notification2token[bookmarks4session.user.push_notification_token] = []
+                notification2token[bookmarks4session.user.push_notification_token].append(notification)
+                ...
+
+                r.rpush('opencon_push_notification', json.dumps({'id': bookmarks4session.user.push_notification_token,
+                                                                 'expo_push_notification_token': bookmarks4session.user.push_notification_token,
+                                                                 'subject': "Event rescheduled",
+                                                                 'message': notification
+                                                                 }))
+
+                ...
+
+        ...
+
+
 async def add_conference(content: dict, source_uri: str, force: bool = False):
     conference = await models.Conference.filter(source_uri=source_uri).get_or_none()
 
@@ -503,7 +553,6 @@ async def add_conference(content: dict, source_uri: str, force: bool = False):
 
     changes_updated = None
     if changes:
-        from conferences.controller import send_changes_to_bookmakers
         changes_updated = await send_changes_to_bookmakers(conference, changes, test=True)
 
     return {'conference': conference,
@@ -632,8 +681,8 @@ async def get_current_conference():
 #     return conference
 
 
-async def authorize_user():
-    anonymous = models.UserAnonymous()
+async def authorize_user(push_notification_token: str = None):
+    anonymous = models.UserAnonymous(push_notification_token=push_notification_token)
     await anonymous.save()
     return str(anonymous.id)
 

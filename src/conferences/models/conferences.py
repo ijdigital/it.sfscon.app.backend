@@ -14,7 +14,7 @@ class UserAnonymous(Model):
 
     id = fields.UUIDField(pk=True)
     created = fields.DatetimeField(auto_now_add=True)
-
+    push_notification_token = fields.CharField(max_length=64, null=True)
 
 class AnonymousBookmark(Model):
     class Meta:
