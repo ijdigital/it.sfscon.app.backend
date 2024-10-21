@@ -483,11 +483,15 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
 
     with redis.Redis(host=os.getenv('REDIS_SERVER'), port=6379, db=0) as r:
 
-        for session in await models.EventSession.filter(id__in=changed_sessions,
+        q = models.EventSession.filter(id__in=changed_sessions,
                                                         anonymous_bookmarks__user__push_notification_token__isnull=False
                                                         ).prefetch_related('anonymous_bookmarks',
                                                                            'room',
-                                                                           'anonymous_bookmarks__user').all():
+                                                                           'anonymous_bookmarks__user')
+
+        print(q.sql())
+
+        for session in await q.all():
 
             for bookmarks4session in session.anonymous_bookmarks.related_objects:
                 _from = changes[str(session.id)]['old_start_timestamp'].strftime('%m.%d. %H:%M')
