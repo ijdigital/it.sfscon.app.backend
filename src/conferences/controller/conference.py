@@ -505,11 +505,17 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
                 notification2token[bookmarks4session.user.push_notification_token].append(notification)
                 ...
 
-                r.rpush('opencon_push_notification', json.dumps({'id': bookmarks4session.user.push_notification_token,
+                log = logging.getLogger('conference_logger')
+                pn_payload = {'id': bookmarks4session.user.push_notification_token,
                                                                  'expo_push_notification_token': bookmarks4session.user.push_notification_token,
                                                                  'subject': "Event rescheduled",
                                                                  'message': notification
-                                                                 }))
+                                                                 }
+                log.info(f"SENDING PUSH NOTIFICATION TO {bookmarks4session.user.push_notification_token}")
+                log.info(f"PN PAYLOAD {pn_payload}")
+
+
+                r.rpush('opencon_push_notification', json.dumps(pn_payload))
 
                 ...
 
