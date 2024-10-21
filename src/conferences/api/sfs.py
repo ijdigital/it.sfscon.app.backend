@@ -63,11 +63,11 @@ async def create_authorization(push_notification_token: Optional[str] = Query(de
 
 
 class AuthorizeRequest(pydantic.BaseModel):
-    push_notification_token: Optional[None | str] = Query(default=None)
+    push_notification_token: Optional[Union[None,str]] = Query(default=None)
 
 
 @app.post('/api/authorize')
-async def create_authorization_post(request: Optional[None | AuthorizeRequest] = None):
+async def create_authorization_post(request: Optional[Union[None,AuthorizeRequest]] = None):
     if not request:
         request = AuthorizeRequest()
 
