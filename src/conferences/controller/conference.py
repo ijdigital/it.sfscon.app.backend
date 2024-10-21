@@ -466,6 +466,10 @@ async def add_sessions(conference, content, tracks_by_name):
 
 
 async def send_changes_to_bookmakers(conference, changes, test=True):
+
+
+    log.info("send_changes_to_bookmakers\n"*5)
+
     changed_sessions = changes.keys()
     all_anonymous_bookmarks = await models.AnonymousBookmark.filter(session_id__in=changed_sessions).all()
 
@@ -505,7 +509,6 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
                 notification2token[bookmarks4session.user.push_notification_token].append(notification)
                 ...
 
-                log = logging.getLogger('conference_logger')
                 pn_payload = {'id': bookmarks4session.user.push_notification_token,
                                                                  'expo_push_notification_token': bookmarks4session.user.push_notification_token,
                                                                  'subject': "Event rescheduled",

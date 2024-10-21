@@ -3,14 +3,19 @@ services:
     build:
       context: .
       dockerfile: infrastructure/docker/Dockerfile
-    command: uvicorn main:app --host 0.0.0.0 --reload # sleep 9999999999
+#    command: sleep 9999 # uvicorn main:app --host 0.0.0.0 --reload # sleep 9999999999
+    command: python main.py 
     env_file:
     - .env
     volumes:
-      - opencon-logs:/var/log/opencon
+#      - opencon-logs:/var/log/opencon
+      - /var/log/opencon:/var/log/opencon
+      
       - ./src/conferences:/conferences
       - ./src/migrations:/migrations
       - ./src/tests/assets/:/tests/assets/
+      - ./src/shared:/shared
+      - ./src/main.py:/main.py
     ports:
     - 8000:8000
 #    healthcheck:
@@ -24,14 +29,14 @@ services:
     depends_on:
       redis:
         condition: service_started
-      postgres:
-        condition: service_started
+#      postgres:
+#        condition: service_started
   
   push_notifications:
     build:
       context: .
       dockerfile: infrastructure/docker/Dockerfile
-    command: python workers/push_notifications.py
+    command:  python workers/push_notifications.py
     env_file:
     - .env
     volumes:
@@ -39,20 +44,20 @@ services:
     depends_on:
       redis:
         condition: service_started
-      postgres:
-        condition: service_started
+#      postgres:
+#        condition: service_started
 #      conferences:
 #        condition: service_healthy
 
-  postgres:
-    image: "postgres:14-alpine"
-    environment:
-      POSTGRES_DB: sfscon
-      POSTGRES_USER: sfscon
-      POSTGRES_PASSWORD: sfscon
-    hostname: postgres
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
+#  postgres:
+#    image: "postgres:14-alpine"
+#    environment:
+#      POSTGRES_DB: sfscon
+#      POSTGRES_USER: sfscon
+#      POSTGRES_PASSWORD: sfscon
+#    hostname: postgres
+#    volumes:
+#      - postgres-data:/var/lib/postgresql/data
 
   redis:
     command: redis-server

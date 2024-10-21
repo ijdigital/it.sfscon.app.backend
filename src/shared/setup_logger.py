@@ -37,10 +37,13 @@ def setup_redis_logger():
 
 
 def setup_file_logger(service: str):
+    print(f'\nsetup_file_logger {service}'*10)
+    
+
     logger = logging.getLogger(f'{service}_logger')
     logger.setLevel(logging.INFO)
 
-    handler = logging.FileHandler(f'/var/log/opencon/{service}.log')
+    handler = logging.FileHandler(f'/var/log/opencon/svc_{service}.log')
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - XXX - %(message)s')
 
     handler.setFormatter(formatter)
