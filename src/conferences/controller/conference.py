@@ -511,7 +511,7 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
         
             log.info(f"Session {session.id}")
 
-            for bookmarks4session in session.anonymous_bookmarks.related_objects:
+            for bookmarks4session in session.anonymous_bookmarks: #.related_objects:
 
                 if not bookmarks4session.user.push_notification_token:
                     continue
@@ -790,8 +790,8 @@ async def opencon_serialize_anonymouse(user_id, conference, last_updated=None):
                              'my_rate_by_session': {}
                              }
     for session in conference.event_sessions:
-        if session.anonymous_rates.related_objects:
-            all_rates_for_session = [r.rate for r in session.anonymous_rates.related_objects]
+        if session.anonymous_rates:
+            all_rates_for_session = [r.rate for r in session.anonymous_rates]
             if all_rates_for_session:
                 conference_avg_rating['rates_by_session'][str(session.id)] = [sum(all_rates_for_session) / len(all_rates_for_session),
                                                                               len(all_rates_for_session)]  # [session.anonymous_rates.avg_stars,
@@ -799,8 +799,8 @@ async def opencon_serialize_anonymouse(user_id, conference, last_updated=None):
 
     user = await models.UserAnonymous.filter(id=user_id).prefetch_related('bookmarks', 'rates').get_or_none()
 
-    bookmarks = [bookmark.session_id for bookmark in user.bookmarks.related_objects]
-    conference_avg_rating['my_rate_by_session'] = {str(rate.session_id): rate.rate for rate in user.rates.related_objects}
+    bookmarks = [bookmark.session_id for bookmark in user.bookmarks]
+    conference_avg_rating['my_rate_by_session'] = {str(rate.session_id): rate.rate for rate in user.rates}
 
     if last_updated and last_updated >= db_last_updated:
         return {'last_updated': db_last_updated,
