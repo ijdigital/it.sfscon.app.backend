@@ -309,11 +309,13 @@ async def add_sessions(conference, content, tracks_by_name):
                 description = event.get('description', None)
                 abstract = event.get('abstract', None)
 
-                no_bookmark = event.get('@no_bookmark', False)
-                bookmarkable = not no_bookmark
-                rateable = bookmarkable
+                # no_bookmark = event.get('@bookmark', False)
+                can_bookmark = event.get('@bookmark', "0") == "1"
+                can_rate = event.get('@rating', "0") == "1"
 
-                if not bookmarkable:
+                if not can_bookmark:
+                    ...
+                else:
                     ...
 
                 if event_start and len(event_start) == 5:
@@ -358,8 +360,8 @@ async def add_sessions(conference, content, tracks_by_name):
                                                                     abstract=abstract,
                                                                     description=remove_html(description),
                                                                     unique_id=unique_id,
-                                                                    bookmarkable=bookmarkable,
-                                                                    rateable=rateable,
+                                                                    bookmarkable=can_bookmark,
+                                                                    rateable=can_rate,
                                                                     track=track,
                                                                     room=db_room,
                                                                     str_start_time=str_start_time,
@@ -699,6 +701,8 @@ async def authorize_user(push_notification_token: str = None):
     await anonymous.save()
     return str(anonymous.id)
 
+async def get_user(id_user: uuid.UUID):
+    return await models.UserAnonymous.filter(id=id_user).get_or_none()
 
 async def bookmark_session(id_user, id_session):
     user = await models.UserAnonymous.filter(id=id_user).get_or_none()

@@ -21,10 +21,15 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends
 
 
-def verify_token(token):
+async def verify_token(token):
     try:
         JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
         decoded = jwt.decode(token, JWT_SECRET_KEY, algorithms=['HS256'])
+
+        user = await controller.get_user(decoded['id_user'])
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid token, user not found")
+
         return decoded
     except Exception as e:
         raise HTTPException(status_code=401, detail="Invalid token")
@@ -63,11 +68,11 @@ async def create_authorization(push_notification_token: Optional[str] = Query(de
 
 
 class AuthorizeRequest(pydantic.BaseModel):
-    push_notification_token: Optional[Union[None,str]] = Query(default=None)
+    push_notification_token: Optional[Union[None, str]] = Query(default=None)
 
 
 @app.post('/api/authorize')
-async def create_authorization_post(request: Optional[Union[None,AuthorizeRequest]] = None):
+async def create_authorization_post(request: Optional[Union[None, AuthorizeRequest]] = None):
     if not request:
         request = AuthorizeRequest()
 
@@ -87,7 +92,7 @@ async def create_authorization_post(request: Optional[Union[None,AuthorizeReques
 
 @app.get('/api/me')
 async def get_me(token: str = Depends(oauth2_scheme)):
-    return verify_token(token)
+    return await verify_token(token)
 
 
 class ImportConferenceRequest(pydantic.BaseModel):
@@ -118,7 +123,7 @@ async def get_current_conference(last_updated: Optional[str] = Query(default=Non
                                  token: str = Depends(oauth2_scheme)):
     # return verify_token(token)
 
-    decoded = verify_token(token)
+    decoded = await verify_token(token)
     return await controller.opencon_serialize_anonymouse(decoded['id_user'], await controller.get_current_conference(),
                                                          last_updated=last_updated)
 
@@ -129,11 +134,11 @@ class RateRequest(pydantic.BaseModel):
 
 @app.post('/api/sessions/{id_session}/rate')
 async def rate_session(id_session: uuid.UUID, request: RateRequest, token: str = Depends(oauth2_scheme)):
-    decoded = verify_token(token)
+    decoded = await  verify_token(token)
     return await controller.rate_session(id_user=decoded['id_user'], id_session=id_session, rate=request.rating)
 
 
 @app.post('/api/sessions/{id_session}/bookmarks/toggle')
 async def toggle_bookmark_for_session(id_session: uuid.UUID, token: str = Depends(oauth2_scheme)):
-    decoded = verify_token(token)
+    decoded = await verify_token(token)
     return await controller.bookmark_session(id_user=decoded['id_user'], id_session=id_session)
