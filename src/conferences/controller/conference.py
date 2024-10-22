@@ -747,6 +747,8 @@ async def bookmark_session(id_user, id_session):
         await current_bookmark.delete()
     return {'bookmarked': False}
 
+def now():
+    return datetime.datetime.now()
 
 async def rate_session(id_user, id_session, rate):
     if rate < 1 or rate > 5:
@@ -762,6 +764,18 @@ async def rate_session(id_user, id_session, rate):
     if not session:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="SESSION_NOT_FOUND")
+
+    if not session.rateable:
+        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                            detail="SESSION_IS_NOT_RATEABLE")
+
+    session_start_datetime_str = f'{session.start_date}'
+
+    if str(now()) < session_start_datetime_str:
+        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                            detail="CAN_NOT_RATE_SESSION_IN_FUTURE")
+
+
 
     try:
         current_rate = await models.AnonymousRate.filter(user=user, session=session).get_or_none()

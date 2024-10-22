@@ -6,11 +6,12 @@ import pprint
 import unittest
 import uuid
 import json
-
+import datetime
 import dotenv
 import logging
 from httpx import AsyncClient
 from base_test_classes import BaseAPITest
+import unittest.mock
 
 os.environ["TEST_MODE"] = "true"
 
@@ -186,12 +187,36 @@ class Test2024(BaseAPITest):
 
             response = await ac.post(f"/api/sessions/{id_1st_session}/rate", json={'rating': 5}, headers={"Authorization": f"Bearer {self.token}"})
 
+            assert response.status_code == 406
+            assert response.json() == {'detail': 'SESSION_IS_NOT_RATEABLE'}
+
+            id_1st_session = None
+            for s in self.sessions:
+                session = self.sessions[s]
+                if session['title'] == 'Let’s all get over the CRA!':
+                    id_1st_session = s
+                    break
+
+            assert id_1st_session
+
+            response = await ac.post(f"/api/sessions/{id_1st_session}/rate", json={'rating': 5}, headers={"Authorization": f"Bearer {self.token}"})
+
+            assert response.status_code == 406
+            assert response.json() == {'detail': 'CAN_NOT_RATE_SESSION_IN_FUTURE'}
+
+
+            with unittest.mock.patch('conferences.controller.conference.now') as mocked_datetime:
+                mocked_datetime.now = datetime.datetime(2024,11,8,11,0)
+                response = await ac.post(f"/api/sessions/{id_1st_session}/rate", json={'rating': 5}, headers={"Authorization": f"Bearer {self.token}"})
+
             assert response.status_code == 200
             assert response.json() == {'avg_rate': 5, 'total_rates': 1}
 
             # ako isti korisnik glasa ponovo desice se samo da se azurira ocena
 
-            response = await ac.post(f"/api/sessions/{id_1st_session}/rate", json={'rating': 2}, headers={"Authorization": f"Bearer {self.token}"})
+            with unittest.mock.patch('conferences.controller.conference.now') as mocked_datetime:
+                mocked_datetime.now = datetime.datetime(2024,11,8,11,0)
+                response = await ac.post(f"/api/sessions/{id_1st_session}/rate", json={'rating': 2}, headers={"Authorization": f"Bearer {self.token}"})
 
             assert response.status_code == 200
             assert response.json() == {'avg_rate': 2, 'total_rates': 1}
@@ -208,14 +233,18 @@ class Test2024(BaseAPITest):
 
             # uvecemo drugog korisnika da glasa
 
-            response = await ac.post(f"/api/sessions/{id_1st_session}/rate", json={'rating': 5}, headers={"Authorization": f"Bearer {self.token2}"})
+            with unittest.mock.patch('conferences.controller.conference.now') as mocked_datetime:
+                mocked_datetime.now = datetime.datetime(2024,11,8,11,0)
+                response = await ac.post(f"/api/sessions/{id_1st_session}/rate", json={'rating': 5}, headers={"Authorization": f"Bearer {self.token2}"})
 
             assert response.status_code == 200
             assert response.json() == {'avg_rate': (2 + 5) / 2, 'total_rates': 2}
 
             # glasace sada i treci korisnik
 
-            response = await ac.post(f"/api/sessions/{id_1st_session}/rate", json={'rating': 5}, headers={"Authorization": f"Bearer {self.token3}"})
+            with unittest.mock.patch('conferences.controller.conference.now') as mocked_datetime:
+                mocked_datetime.now = datetime.datetime(2024,11,8,11,0)
+                response = await ac.post(f"/api/sessions/{id_1st_session}/rate", json={'rating': 5}, headers={"Authorization": f"Bearer {self.token3}"})
 
             assert response.status_code == 200
             assert response.json() == {'avg_rate': (2 + 5 + 5) / 3, 'total_rates': 3}
@@ -236,7 +265,9 @@ class Test2024(BaseAPITest):
 
             id_2nd_session = list(self.sessions.keys())[1]
 
-            response = await ac.post(f"/api/sessions/{id_2nd_session}/rate", json={'rating': 1}, headers={"Authorization": f"Bearer {self.token3}"})
+            with unittest.mock.patch('conferences.controller.conference.now') as mocked_datetime:
+                mocked_datetime.now = datetime.datetime(2024,11,8,11,0)
+                response = await ac.post(f"/api/sessions/{id_2nd_session}/rate", json={'rating': 1}, headers={"Authorization": f"Bearer {self.token3}"})
 
             assert response.status_code == 200
             assert response.json() == {'avg_rate': 1, 'total_rates': 1}
@@ -303,7 +334,6 @@ class Test2024(BaseAPITest):
             response = await ac.post('/api/notification-token', json={'push_notification_token': 'ExponentPushToken[xxxxxxxxxxxxxxxxxxxxx1]'},headers={"Authorization": f"Bearer {token}"} )
             assert response.status_code == 200
 
-            return
 
             response = await ac.get("/api/me", headers={"Authorization": f"Bearer {token}"})
             assert response.status_code == 200
