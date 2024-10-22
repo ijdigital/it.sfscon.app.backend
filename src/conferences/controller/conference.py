@@ -491,16 +491,7 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
     with redis.Redis(host=os.getenv('REDIS_SERVER'), port=6379, db=0) as r:
 
         q = models.EventSession.filter(id__in=changed_sessions,
-                                                        # anonymous_bookmarks__user__push_notification_token__isnull=False
-                                                        ).prefetch_related('anonymous_bookmarks',
-                                                                           'room',
-                                                                           'anonymous_bookmarks__user'
-                                                                           )
-
-        log.info(f"preforming query {q.sql()}")
-
-        q = models.EventSession.filter(id__in=changed_sessions,
-                                                        # anonymous_bookmarks__user__push_notification_token__isnull=False
+                                                        anonymous_bookmarks__user__push_notification_token__isnull=False
                                                         ).prefetch_related('anonymous_bookmarks',
                                                                            'room',
                                                                            'anonymous_bookmarks__user'
@@ -509,14 +500,11 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
 
         for session in await q.all():
         
-            log.info(f"Session {session.id}")
+            log.info(f"  Session {session.id}")
 
-            for bookmarks4session in session.anonymous_bookmarks: #.related_objects:
+            for bookmarks4session in session.anonymous_bookmarks:
 
-                if not bookmarks4session.user.push_notification_token:
-                    continue
-            
-                log.info(f"bookmarks4session {bookmarks4session}")
+                log.info(f"    bookmarks4session {bookmarks4session}")
 
                 _from = changes[str(session.id)]['old_start_timestamp'].strftime('%m.%d. %H:%M')
                 _to = changes[str(session.id)]['new_start_timestamp'].strftime('%m.%d. %H:%M')
