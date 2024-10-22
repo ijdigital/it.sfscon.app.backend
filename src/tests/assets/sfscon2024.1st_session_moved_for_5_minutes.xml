@@ -666,7 +666,7 @@ The benefits are visible for companies of any size, even if their business does 
     </room>
     <room name="Seminar 2">
       <event id="67179da4c6494ec06704ae106c6fe150d929e76e489a0" unique_id="2024day1event6" bookmark="1" rating="1">
-        <start>11:00</start>
+        <start>11:05</start>
         <duration>00:15</duration>
         <title>Open Access for Museum Collections and Research</title>
         <url>https://www.sfscon.it/talks/open-access-for-museum-collections-and-research/</url>
