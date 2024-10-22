@@ -44,18 +44,27 @@ def setup_logger(logger_name):
 
 async def send_notification(item):
     log = logging.getLogger('push_notifications')
+    print("\n"*4)
     print("ITEM", item)
+    print("\n"*4)
+
+    if not item or 'id' not in item or not item['id']:
+        return
+        
     try:
-        json_igor = {
-            "to": "ExponentPushToken[BCzMMxFrELJNXBLHHGia5T]",
+
+        payload = {
+            "to": item['id'],
             "title": item['subject'],
             "body": item['message']
         }
 
         async with httpx.AsyncClient() as client:
-            res = await client.post('https://exp.host/--/api/v2/push/send', json=json_igor)
-
+            res = await client.post('https://exp.host/--/api/v2/push/send', json=payload)
+            
+            print("\n"*4)
             print(res.json())
+            print("\n"*4)
 
     except Exception as e:
         log.critical(f"Error sending push notification: {e}")
@@ -69,7 +78,7 @@ async def read_redis_queue(queue_name):
     log.info("Worker started")
 
     while True:
-        res = redis_client.blpop(queue_name.encode('utf-8'), 60 * 5)
+        res = redis_client.blpop(queue_name.encode('utf-8'), 5) # *6
         if not res:
             print('.')
             continue
@@ -80,9 +89,13 @@ async def read_redis_queue(queue_name):
 
         item = json.loads(item)
 
-        print(item)
-        await send_notification(item)
-
+        try:
+            await send_notification(item)
+        except Exception as e:
+            print("\n"*5)
+            print(e)
+            continue
+            
 
 if __name__ == "__main__":
     setup_logger('push_notifications')

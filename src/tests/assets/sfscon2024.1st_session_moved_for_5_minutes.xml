@@ -73,7 +73,7 @@
         <rating>0</rating>
       </event>
       <event id="6709294c4f97d3b7709c738d05fd184e877e3e3448941" unique_id="2024day1event4" bookmark="0" rating="0">
-        <start>10:30</start>
+        <start>10:35</start>
         <duration>00:30</duration>
         <title>Keynote speaker &amp;#8211; coming soon</title>
         <language/>
@@ -84,7 +84,7 @@
         <rating>0</rating>
       </event>
       <event id="6709294c4ffe991261e6acff65b5273307ce314f6d6b3" unique_id="2024day1event5" bookmark="1" rating="1">
-        <start>11:00</start>
+        <start>11:56</start>
         <duration>00:15</duration>
         <title>Let’s all get over the CRA!</title>
         <url>https://www.sfscon.it/talks/lets-all-get-over-the-cra/</url>
@@ -118,7 +118,7 @@ It is perhaps fair to mention that the CRA itself does not exist in a void and i
         <rating>1</rating>
       </event>
       <event id="6709294c5184cacbbb27690a11ddf87dce9d0c911eaeb" unique_id="2024day1event9" bookmark="1" rating="1">
-        <start>11:20</start>
+        <start>11:25</start>
         <duration>00:15</duration>
         <title>Ensuring fair behavior among Autonomous Vehicles</title>
         <url>https://www.sfscon.it/talks/ensuring-fair-behavior-among-autonomous-vehicles/</url>
@@ -546,7 +546,7 @@ The benefits are visible for companies of any size, even if their business does 
     </room>
     <room name="Seminar 2">
       <event id="6709294c50664ec06704ae106c6fe150d929e76e489a0" unique_id="2024day1event6" bookmark="1" rating="1">
-        <start>11:00</start>
+        <start>11:52</start>
         <duration>00:15</duration>
         <title>Open Access for Museum Collections and Research</title>
         <url>https://www.sfscon.it/talks/open-access-for-museum-collections-and-research/</url>
@@ -1005,7 +1005,7 @@ This talk will illustrate how to scan the available data and make reverse engine
     </room>
     <room name="Seminar 3">
       <event id="6709294c50c9a5e3e4ab0e4be4924544813945267c986" unique_id="2024day1event7" bookmark="1" rating="1">
-        <start>11:00</start>
+        <start>11:25</start>
         <duration>00:15</duration>
         <title>Open-source silicon chips</title>
         <url>https://www.sfscon.it/talks/open-source-silicon-chips/</url>
@@ -1442,7 +1442,7 @@ In a format that you can actually access and read?&lt;/p&gt;
     </room>
     <room name="Seminar 4">
       <event id="6709294c512f76496fc52ef52a192483e2d3036f23e66" unique_id="2024day1event8" bookmark="1" rating="1">
-        <start>11:00</start>
+        <start>11:32</start>
         <duration>00:15</duration>
         <title>Apisense – Easily monitor and track your REST-API data quality</title>
         <url>https://www.sfscon.it/talks/apisense-easily-monitor-and-track-your-rest-api-data-quality/</url>

@@ -470,7 +470,7 @@ async def add_sessions(conference, content, tracks_by_name):
 async def send_changes_to_bookmakers(conference, changes, test=True):
 
 
-    log.info("send_changes_to_bookmakers\n"*5)
+    log.info("send_changes_to_bookmakers"*5)
 
     changed_sessions = changes.keys()
     all_anonymous_bookmarks = await models.AnonymousBookmark.filter(session_id__in=changed_sessions).all()
@@ -495,11 +495,16 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
                                                                            'room',
                                                                            'anonymous_bookmarks__user')
 
-        print(q.sql())
+        log.info(f"preforming query {q.sql()}")
 
         for session in await q.all():
+        
+            log.info(f"Session {session.id}")
 
             for bookmarks4session in session.anonymous_bookmarks.related_objects:
+            
+                log.info(f"bookmarks4session {bookmarks4session}")
+
                 _from = changes[str(session.id)]['old_start_timestamp'].strftime('%m.%d. %H:%M')
                 _to = changes[str(session.id)]['new_start_timestamp'].strftime('%m.%d. %H:%M')
 
@@ -513,13 +518,14 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
                 if bookmarks4session.user.push_notification_token not in notification2token:
                     notification2token[bookmarks4session.user.push_notification_token] = []
                 notification2token[bookmarks4session.user.push_notification_token].append(notification)
-                ...
+
 
                 pn_payload = {'id': bookmarks4session.user.push_notification_token,
                                                                  'expo_push_notification_token': bookmarks4session.user.push_notification_token,
                                                                  'subject': "Event rescheduled",
                                                                  'message': notification
                                                                  }
+
                 log.info(f"SENDING PUSH NOTIFICATION TO {bookmarks4session.user.push_notification_token}")
                 log.info(f"PN PAYLOAD {pn_payload}")
 

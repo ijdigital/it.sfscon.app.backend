@@ -36,10 +36,11 @@ services:
     build:
       context: .
       dockerfile: infrastructure/docker/Dockerfile
-    command:  python workers/push_notifications.py
+    command: sleep 9999 #python workers/push_notifications.py
     env_file:
     - .env
     volumes:
+      - ./src/workers:/workers
       - opencon-logs:/var/log/opencon
     depends_on:
       redis:
