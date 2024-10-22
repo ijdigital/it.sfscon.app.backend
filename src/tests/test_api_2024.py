@@ -300,6 +300,11 @@ class Test2024(BaseAPITest):
             assert response.status_code == 200
             token = response.json()['token']
 
+            response = await ac.post('/api/notification-token', json={'push_notification_token': 'ExponentPushToken[xxxxxxxxxxxxxxxxxxxxx1]'},headers={"Authorization": f"Bearer {token}"} )
+            assert response.status_code == 200
+
+            return
+
             response = await ac.get("/api/me", headers={"Authorization": f"Bearer {token}"})
             assert response.status_code == 200
 

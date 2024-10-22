@@ -21,6 +21,10 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi import Depends
 
 
+class PushNotificationRequest(pydantic.BaseModel):
+    push_notification_token: Optional[Union[None, str]] = Query(default=None)
+
+
 async def verify_token(token):
     try:
         JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
@@ -67,18 +71,14 @@ async def create_authorization(push_notification_token: Optional[str] = Query(de
     return {'token': encoded_jwt}
 
 
-class AuthorizeRequest(pydantic.BaseModel):
-    push_notification_token: Optional[Union[None, str]] = Query(default=None)
 
 
 @app.post('/api/authorize')
-async def create_authorization_post(request: Optional[Union[None, AuthorizeRequest]] = None):
-    if not request:
-        request = AuthorizeRequest()
+async def create_authorization_post():
 
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'secret')
 
-    id_user = await controller.authorize_user(request.push_notification_token)
+    id_user = await controller.authorize_user()
 
     payload = {
         'id_user': id_user,
@@ -88,6 +88,15 @@ async def create_authorization_post(request: Optional[Union[None, AuthorizeReque
     encoded_jwt = jwt.encode(payload, JWT_SECRET_KEY, algorithm='HS256')
 
     return {'token': encoded_jwt}
+
+
+@app.post('/api/notification-token')
+async def store_notification_token(request: PushNotificationRequest, token: str = Depends(oauth2_scheme)):
+    decoded = await verify_token(token)
+    user = await controller.get_user(decoded['id_user'])
+    user.push_notification_token = request.push_notification_token
+    await user.save()
+
 
 
 @app.get('/api/me')

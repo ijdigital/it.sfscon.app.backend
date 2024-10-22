@@ -716,8 +716,8 @@ async def get_current_conference():
 
 
 async def authorize_user(push_notification_token: str = None):
-    log.info(f"AUTHORIZING NEW ANONYMOUS USER push_notification_token={push_notification_token}")
-    anonymous = models.UserAnonymous(push_notification_token=push_notification_token)
+    # log.info(f"AUTHORIZING NEW ANONYMOUS USER push_notification_token={push_notification_token}")
+    anonymous = models.UserAnonymous() #push_notification_token=push_notification_token)
     await anonymous.save()
     return str(anonymous.id)
 
