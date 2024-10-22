@@ -303,7 +303,16 @@ class Test2024(BaseAPITest):
             response = await ac.get("/api/me", headers={"Authorization": f"Bearer {token}"})
             assert response.status_code == 200
 
-            id_1st_session = list(self.sessions.keys())[0]
+            id_1st_session = None
+            for s in self.sessions:
+                session = self.sessions[s]
+                if session['title'] == 'Let’s all get over the CRA!':
+                    id_1st_session = s
+                    break
+
+            assert id_1st_session
+
+            # id_1st_session = list(self.sessions.keys())[0]
             response = await ac.post(f"/api/sessions/{id_1st_session}/bookmarks/toggle", headers={"Authorization": f"Bearer {token}"})
             assert response.status_code == 200
             assert response.json() == {'bookmarked': True}

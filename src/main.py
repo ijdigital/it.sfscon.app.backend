@@ -27,6 +27,5 @@ if __name__ == "__main__":
     import uvicorn
     setup_file_logger('conference')
     log = logging.getLogger('conference_logger')
-    for i in range(1,10):
-        log.info("STARTING")
+    log.info("STARTING")
     uvicorn.run(get_app(), host="0.0.0.0", port=8000)

@@ -37,9 +37,6 @@ def setup_redis_logger():
 
 
 def setup_file_logger(service: str):
-    print(f'\nsetup_file_logger {service}'*10)
-    
-
     logger = logging.getLogger(f'{service}_logger')
     logger.setLevel(logging.INFO)
 
