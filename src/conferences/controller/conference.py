@@ -524,7 +524,7 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
                     _to = changes[str(session.id)]['new_start_timestamp'].strftime('%H:%M')
 
                 notification = "Session '" + clean_text(
-                    session.title) + "' has been been rescheduled from " + _from + " to " + _to + f' in room {session.room.name}'
+                    session.title) + "' has been rescheduled from " + _from + " to " + _to + f' in room {session.room.name}'
 
                 if bookmarks4session.user.push_notification_token not in notification2token:
                     notification2token[bookmarks4session.user.push_notification_token] = []
@@ -542,10 +542,12 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
 
                 s = json.dumps(pn_payload, sort_keys=True)
                 if s in sent:
+                    log.info(f"Izbegavam da saljem drugi put {s}")
                     continue
 
                 sent.add(s)
 
+                log.info("sad ga ipak saljem")
                 r.rpush('opencon_push_notification', json.dumps(pn_payload))
 
 
