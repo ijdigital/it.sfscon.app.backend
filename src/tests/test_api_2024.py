@@ -210,11 +210,11 @@ class Test2024(BaseAPITest):
 
             assert id_1st_session
 
-            # response = await ac.post(f"/api/sessions/{id_1st_session}/rate", json={'rating': 5}, headers={"Authorization": f"Bearer {self.token}"})
-            #
-            # assert response.status_code == 406
-            # assert 'detail' in response.json() and 'code' in response.json()['detail']
-            # assert response.json()['detail']['code'] == 'CAN_NOT_RATE_SESSION_IN_FUTURE'
+            response = await ac.post(f"/api/sessions/{id_1st_session}/rate", json={'rating': 5}, headers={"Authorization": f"Bearer {self.token}"})
+
+            assert response.status_code == 406
+            assert 'detail' in response.json() and 'code' in response.json()['detail']
+            assert response.json()['detail']['code'] == 'CAN_NOT_RATE_SESSION_IN_FUTURE'
 
             with unittest.mock.patch('conferences.controller.conference.now') as mocked_datetime:
                 mocked_datetime.now = datetime.datetime(2024, 11, 8, 11, 0)

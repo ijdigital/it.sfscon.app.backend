@@ -813,9 +813,9 @@ async def rate_session(id_user, id_session, rate):
 
     session_start_datetime_str = f'{session.start_date}'
 
-    # if str(now()) < session_start_datetime_str:
-    #     raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
-    #                         detail={"code": "CAN_NOT_RATE_SESSION_IN_FUTURE", "message": "The session cannot be rated because it hasn't started. You can submit the rating after the session begins."})
+    if str(now()) < session_start_datetime_str:
+        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                            detail={"code": "CAN_NOT_RATE_SESSION_IN_FUTURE", "message": "Rating is only possible after the talk has started."})
 
     try:
         current_rate = await models.AnonymousRate.filter(user=user, session=session).get_or_none()
