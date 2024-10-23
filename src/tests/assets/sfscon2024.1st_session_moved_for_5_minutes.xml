@@ -37,7 +37,7 @@
     </room>
     <room name="Seminar 1">
       <event id="67179da4c292132bfb0474f9b283501bcf120cbcdf225" unique_id="2024day1event1" bookmark="1" rating="1">
-        <start>09:00</start>
+        <start>09:02</start>
         <duration>00:15</duration>
         <title>Opening SFSCON 2024</title>
         <url>https://www.sfscon.it/talks/opening-sfscon-2024/</url>
@@ -181,7 +181,7 @@
         <rating>1</rating>
       </event>
       <event id="67179da4c5dd391261e6acff65b5273307ce314f6d6b3" unique_id="2024day1event5" bookmark="1" rating="1">
-        <start>11:15</start>
+        <start>11:00</start>
         <duration>00:15</duration>
         <title>Let’s all get over the CRA!</title>
         <url>https://www.sfscon.it/talks/lets-all-get-over-the-cra/</url>
@@ -215,7 +215,7 @@ It is perhaps fair to mention that the CRA itself does not exist in a void and i
         <rating>1</rating>
       </event>
       <event id="67179da4c77df619fb76f2c3d37611b0e165afa9492aa" unique_id="2024day1event9" bookmark="1" rating="1">
-        <start>11:20</start>
+        <start>11:21</start>
         <duration>00:15</duration>
         <title>On the ethical challenges raised by robots powered by Artificial Intelligence</title>
         <url>https://www.sfscon.it/talks/on-the-ethical-challenges-raised-by-robots-powered-by-artificial-intelligence/</url>
@@ -666,7 +666,7 @@ The benefits are visible for companies of any size, even if their business does 
     </room>
     <room name="Seminar 2">
       <event id="67179da4c6494ec06704ae106c6fe150d929e76e489a0" unique_id="2024day1event6" bookmark="1" rating="1">
-        <start>11:05</start>
+        <start>11:00</start>
         <duration>00:15</duration>
         <title>Open Access for Museum Collections and Research</title>
         <url>https://www.sfscon.it/talks/open-access-for-museum-collections-and-research/</url>
