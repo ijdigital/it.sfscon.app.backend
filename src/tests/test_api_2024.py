@@ -328,7 +328,7 @@ class Test2024(BaseAPITest):
 
     async def test_push_notification(self):
         async with AsyncClient(app=self.app, base_url="http://test") as ac:
-            response = await ac.post("/api/authorize", json={'push_notification_token': 'ExponentPushToken[xxxxxxxxxxxxxxxxxxxxx1]'})
+            response = await ac.post("/api/authorize")
             assert response.status_code == 200
             token = response.json()['token']
 
@@ -336,7 +336,18 @@ class Test2024(BaseAPITest):
             assert response.status_code == 200
 
 
+            response = await ac.post("/api/authorize")
+            assert response.status_code == 200
+            token2 = response.json()['token']
+
+            response = await ac.post('/api/notification-token', json={'push_notification_token': 'ExponentPushToken[xxxxxxxxxxxxxxxxxxxxx2]'},headers={"Authorization": f"Bearer {token2}"} )
+            assert response.status_code == 200
+
+
             response = await ac.get("/api/me", headers={"Authorization": f"Bearer {token}"})
+            assert response.status_code == 200
+
+            response = await ac.get("/api/me", headers={"Authorization": f"Bearer {token2}"})
             assert response.status_code == 200
 
             id_cra_session = None
@@ -348,7 +359,24 @@ class Test2024(BaseAPITest):
 
             assert id_cra_session
 
+            id_eti_session = None
+            for s in self.sessions:
+                session = self.sessions[s]
+                if session['title'] == 'On the ethical challenges raised by robots powered by Artificial Intelligence':
+                    id_eti_session = s
+                    break
+
+            assert id_eti_session
+
             response = await ac.post(f"/api/sessions/{id_cra_session}/bookmarks/toggle", headers={"Authorization": f"Bearer {token}"})
+            assert response.status_code == 200
+            assert response.json() == {'bookmarked': True}
+
+            response = await ac.post(f"/api/sessions/{id_eti_session}/bookmarks/toggle", headers={"Authorization": f"Bearer {token}"})
+            assert response.status_code == 200
+            assert response.json() == {'bookmarked': True}
+
+            response = await ac.post(f"/api/sessions/{id_cra_session}/bookmarks/toggle", headers={"Authorization": f"Bearer {token2}"})
             assert response.status_code == 200
             assert response.json() == {'bookmarked': True}
 

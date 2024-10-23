@@ -491,14 +491,9 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
 
     with redis.Redis(host=os.getenv('REDIS_SERVER'), port=6379, db=0) as r:
 
-        q = models.EventSession.all()
-        for session in await q:
-            # print("A1", session.id)
-            log.info(f"A1 {session.id}")
-
         q = models.EventSession.filter(id__in=changed_sessions)
         for session in await q:
-            # print("S1", session.id)
+            print("S1", session.id)
             log.info(f"S1 {session.id}")
 
         q = models.EventSession.filter(id__in=changed_sessions,
@@ -510,6 +505,8 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
 
         log.info("X")
         # print("X)")
+
+        sent = set()
 
         for session in await q:
         
@@ -543,8 +540,15 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
                 log.info(f"SENDING PUSH NOTIFICATION TO {bookmarks4session.user.push_notification_token}")
                 log.info(f"PN PAYLOAD {pn_payload}")
 
+                s = json.dumps(pn_payload, sort_keys=True)
+                if s in sent:
+                    continue
+
+                sent.add(s)
 
                 r.rpush('opencon_push_notification', json.dumps(pn_payload))
+
+
 
                 ...
 
