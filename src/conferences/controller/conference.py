@@ -476,7 +476,7 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
     log.info("send_changes_to_bookmakers")
 
     changed_sessions = changes.keys()
-    all_anonymous_bookmarks = await models.AnonymousBookmark.filter(session_id__in=changed_sessions).all()
+    # all_anonymous_bookmarks = await models.AnonymousBookmark.filter(session_id__in=changed_sessions).all()
 
     notification2token = {}
 
@@ -506,12 +506,12 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
                                                         ).prefetch_related('anonymous_bookmarks',
                                                                            'room',
                                                                            'anonymous_bookmarks__user'
-                                                                           )
+                                                                           ).distinct()
 
         log.info("X")
         # print("X)")
 
-        sent = set()
+        # sent = set()
 
         for session in await q:
 
@@ -546,17 +546,17 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
                 log.info(f"SENDING PUSH NOTIFICATION TO {bookmarks4session.user.push_notification_token}")
                 # log.info(f"PN PAYLOAD {pn_payload}")
 
-                s = json.dumps(pn_payload, sort_keys=True)
-                if s in sent:
-                    log.info(
-                        f"PRESKACEM SLANJE {bookmarks4session.session_id} na: {bookmarks4session.user.push_notification_token}")
-                    # log.info(f"Izbegavam da saljem drugi put {s}")
-                    continue
+                # s = json.dumps(pn_payload, sort_keys=True)
+                # if s in sent:
+                #     log.info(
+                #         f"PRESKACEM SLANJE {bookmarks4session.session_id} na: {bookmarks4session.user.push_notification_token}")
+                #     # log.info(f"Izbegavam da saljem drugi put {s}")
+                #     continue
 
 
                 log.info(f"sad saljem sesiju {bookmarks4session.session_id} na: {bookmarks4session.user.push_notification_token}")
                 redis_client.push_message('opencon_push_notification', pn_payload)
-                sent.add(s)
+                # sent.add(s)
 
 
 
