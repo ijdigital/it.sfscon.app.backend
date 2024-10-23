@@ -36,7 +36,8 @@ services:
     build:
       context: .
       dockerfile: infrastructure/docker/Dockerfile
-    command: python workers/push_notifications.py
+#    command: python workers/push_notifications.py
+    command: sleep 99999
     env_file:
     - .env
     volumes:

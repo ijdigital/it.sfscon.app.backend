@@ -555,7 +555,7 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
 
 
                 log.info(f"sad saljem sesiju {bookmarks4session.session_id} na: {bookmarks4session.user.push_notification_token}")
-                redis_client.push_message('opencon_push_notification', json.dumps(pn_payload))
+                redis_client.push_message('opencon_push_notification', pn_payload)
                 sent.add(s)
 
 

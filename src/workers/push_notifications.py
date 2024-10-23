@@ -44,11 +44,9 @@ def setup_logger(logger_name):
 
 async def send_notification(item):
     log = logging.getLogger('push_notifications')
-    print("\n"*4)
-    print("ITEM", item)
-    print("\n"*4)
 
     if not item or 'id' not in item or not item['id']:
+        print("not item or 'id' not in item or not item['id']")
         return
         
     try:
@@ -60,13 +58,17 @@ async def send_notification(item):
         }
 
         async with httpx.AsyncClient() as client:
+
+            print("SENDING", payload)
+            
             res = await client.post('https://exp.host/--/api/v2/push/send', json=payload)
             
-            print("\n"*4)
             print(res.json())
-            print("\n"*4)
 
     except Exception as e:
+        
+        print("ERROR",e)
+    
         log.critical(f"Error sending push notification: {e}")
 
 
@@ -83,17 +85,17 @@ async def read_redis_queue(queue_name):
             print('.')
             continue
 
+        #breakpoint()
+
         queue, item = res
 
         item = item.decode('utf-8')
-
         item = json.loads(item)
 
         try:
             await send_notification(item)
         except Exception as e:
-            print("\n"*5)
-            print(e)
+            print("EXCEPTION", e)
             continue
             
 
