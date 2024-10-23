@@ -542,13 +542,15 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
 
                 s = json.dumps(pn_payload, sort_keys=True)
                 if s in sent:
-                    log.info(f"Izbegavam da saljem drugi put {s}")
+                    log.info(
+                        f"PRESKACEM SLANJE {bookmarks4session.session_id} na: {bookmarks4session.user.push_notification_token}")
+                    # log.info(f"Izbegavam da saljem drugi put {s}")
                     continue
 
-                sent.add(s)
 
-                log.info("sad ga ipak saljem")
+                log.info(f"sad saljem sesiju {bookmarks4session.session_id} na: {bookmarks4session.user.push_notification_token}")
                 r.rpush('opencon_push_notification', json.dumps(pn_payload))
+                sent.add(s)
 
 
 
