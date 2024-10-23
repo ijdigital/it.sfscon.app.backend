@@ -509,12 +509,13 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
         sent = set()
 
         for session in await q:
-        
-            log.info(f"  Session {session.id}")
+
+            log.info('-'*100)
+            log.info(f"Session {session.id}")
 
             for bookmarks4session in session.anonymous_bookmarks:
 
-                log.info(f"    bookmarks4session {bookmarks4session}")
+                # log.info(f"    bookmarks4session {bookmarks4session}")
 
                 _from = changes[str(session.id)]['old_start_timestamp'].strftime('%m.%d. %H:%M')
                 _to = changes[str(session.id)]['new_start_timestamp'].strftime('%m.%d. %H:%M')
@@ -538,7 +539,7 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
                                                                  }
 
                 log.info(f"SENDING PUSH NOTIFICATION TO {bookmarks4session.user.push_notification_token}")
-                log.info(f"PN PAYLOAD {pn_payload}")
+                # log.info(f"PN PAYLOAD {pn_payload}")
 
                 s = json.dumps(pn_payload, sort_keys=True)
                 if s in sent:
