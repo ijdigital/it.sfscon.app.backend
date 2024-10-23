@@ -24,6 +24,7 @@ log = logging.getLogger('conference_logger')
 current_file_dir = os.path.dirname(os.path.abspath(__file__))
 
 rlog = logging.getLogger('redis_logger')
+from tortoise.functions import Avg, Count
 
 
 async def db_add_conference(name, acronym, source_uri):
@@ -489,7 +490,11 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
 
         return cleaned_text
 
-    with redis.Redis(host=os.getenv('REDIS_SERVER'), port=6379, db=0) as r:
+    from shared.redis_client import RedisClientHandler
+    redis_client = RedisClientHandler.get_redis_client()
+    # with redis.Redis(host=os.getenv('REDIS_SERVER'), port=6379, db=0) as r:
+
+    if True:
 
         q = models.EventSession.filter(id__in=changed_sessions)
         for session in await q:
@@ -550,7 +555,7 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
 
 
                 log.info(f"sad saljem sesiju {bookmarks4session.session_id} na: {bookmarks4session.user.push_notification_token}")
-                r.rpush('opencon_push_notification', json.dumps(pn_payload))
+                redis_client.push_message('opencon_push_notification', json.dumps(pn_payload))
                 sent.add(s)
 
 
@@ -676,6 +681,33 @@ async def get_pretix_order(conference: models.Conference, id_pretix_order: str):
         log.critical(f'Error getting pretix order {id_pretix_order} :: {str(e)}')
         raise
 
+async def get_all_anonymous_users_with_bookmarked_sessions():
+    conference = await get_current_conference()
+    if not conference:
+        raise HTTPException(status_code=404, detail={"code": "CONFERENCE_NOT_FOUND", "message": "Conference not found"})
+
+    all_users = await models.UserAnonymous.all().prefetch_related('bookmarks','bookmarks__session')
+
+    return [{'id': user.id, 'bookmarks': [b.session.title for b in user.bookmarks]} for user in all_users]
+
+async def get_sessions_by_rate():
+    conference = await get_current_conference()
+    if not conference:
+        raise HTTPException(status_code=404, detail={"code": "CONFERENCE_NOT_FOUND", "message": "Conference not found"})
+
+
+    all_sessions = await models.EventSession.filter(
+        conference=conference
+    ).annotate(
+        avg_rate=Avg('anonymous_rates__rate'),
+        rates_count=Count('anonymous_rates')
+    ).order_by('avg_rate','title').prefetch_related('anonymous_rates').all()
+
+    # all_sessions = await models.EventSession.filter(conference=conference).prefetch_related('anonymous_rates').all()
+    return [{'title': session.title,
+             'rates': len(session.anonymous_rates),
+             'avg_rate': sum([r.rate for r in session.anonymous_rates]) / len (session.anonymous_rates) if session.anonymous_rates else None
+             } for session in all_sessions]
 
 async def get_current_conference():
     conference = await models.Conference.filter().prefetch_related('tracks',

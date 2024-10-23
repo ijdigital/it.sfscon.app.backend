@@ -24,6 +24,16 @@ from fastapi import Depends
 class PushNotificationRequest(pydantic.BaseModel):
     push_notification_token: Optional[Union[None, str]] = Query(default=None)
 
+async def verify_admin_token(token):
+    try:
+        JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
+        decoded = jwt.decode(token, JWT_SECRET_KEY, algorithms=['HS256'])
+        if decoded and 'username' in decoded and decoded['username'] == 'admin':
+            return decoded
+
+        raise HTTPException(status_code=401, detail={"code": "INVALID_TOKEN", "message": "Invalid token"})
+    except Exception as e:
+        raise HTTPException(status_code=401, detail={"code": "INVALID_TOKEN", "message": "Invalid token"})
 
 async def verify_token(token):
     try:
@@ -32,7 +42,8 @@ async def verify_token(token):
 
         user = await controller.get_user(decoded['id_user'])
         if not user:
-            raise HTTPException(status_code=401, detail={"code": "INVALID_TOKEN", "message": "Invalid token, user not found"})
+            raise HTTPException(status_code=401,
+                                detail={"code": "INVALID_TOKEN", "message": "Invalid token, user not found"})
 
         return decoded
     except Exception as e:
@@ -46,6 +57,8 @@ class ConferenceImportRequestResponse(pydantic.BaseModel):
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/authorize")
+
+oauth2_scheme_admin = OAuth2PasswordBearer(tokenUrl="/api/admin/login")
 
 origins = ["*"]
 
@@ -71,11 +84,8 @@ async def create_authorization(push_notification_token: Optional[str] = Query(de
     return {'token': encoded_jwt}
 
 
-
-
 @app.post('/api/authorize')
 async def create_authorization_post():
-
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'secret')
 
     id_user = await controller.authorize_user()
@@ -96,7 +106,6 @@ async def store_notification_token(request: PushNotificationRequest, token: str 
     user = await controller.get_user(decoded['id_user'])
     user.push_notification_token = request.push_notification_token
     await user.save()
-
 
 
 @app.get('/api/me')
@@ -151,3 +160,39 @@ async def rate_session(id_session: uuid.UUID, request: RateRequest, token: str =
 async def toggle_bookmark_for_session(id_session: uuid.UUID, token: str = Depends(oauth2_scheme)):
     decoded = await verify_token(token)
     return await controller.bookmark_session(id_user=decoded['id_user'], id_session=id_session)
+
+
+class AdminLoginRequest(pydantic.BaseModel):
+    username: str
+    password: str
+
+
+@app.post('/api/admin/login')
+async def login_admin(request: AdminLoginRequest):
+    if (request.username, request.password) != ('admin', 'admin'):
+        raise HTTPException(status_code=401,
+                            detail={"code": "INVALID_ADMIN_USERNAME_OR_PASSWORD",
+                                    "message": "Invalid admin username or password"})
+
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'secret')
+
+    payload = {
+        'username': 'admin',
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(days=2),
+    }
+
+    encoded_jwt = jwt.encode(payload, JWT_SECRET_KEY, algorithm='HS256')
+
+    return {'token': encoded_jwt}
+
+
+@app.get('/api/admin/users_with_bookmarks')
+async def get_users_with_bookmarks(token: str = Depends(oauth2_scheme_admin)):
+    await verify_admin_token(token)
+    return {'data': await controller.get_all_anonymous_users_with_bookmarked_sessions()}
+
+
+@app.get('/api/admin/sessions_by_rate')
+async def get_sessions_by_rate(token: str = Depends(oauth2_scheme_admin)):
+    await verify_admin_token(token)
+    return {'data': await controller.get_sessions_by_rate()}
