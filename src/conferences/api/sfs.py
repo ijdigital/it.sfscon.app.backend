@@ -32,11 +32,11 @@ async def verify_token(token):
 
         user = await controller.get_user(decoded['id_user'])
         if not user:
-            raise HTTPException(status_code=401, detail="Invalid token, user not found")
+            raise HTTPException(status_code=401, detail={"code": "INVALID_TOKEN", "message": "Invalid token, user not found"})
 
         return decoded
     except Exception as e:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(status_code=401, detail={"code": "INVALID_TOKEN", "message": "Invalid token"})
 
 
 class ConferenceImportRequestResponse(pydantic.BaseModel):

@@ -227,7 +227,8 @@ async def add_sessions(conference, content, tracks_by_name):
                 if unique_id == '2023day1event5':
                     ...
                 if unique_id in events_by_unique_id:
-                    raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail=f"EVENT_UNIQUE_ID_ALREADY_EXISTS:{unique_id}")
+                    raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail={"code": f"EVENT_UNIQUE_ID_ALREADY_EXISTS", "message": f"Event {unique_id} already exists"})
+
                 events_by_unique_id[unique_id] = unique_id
 
     all_uids = set()
@@ -236,7 +237,7 @@ async def add_sessions(conference, content, tracks_by_name):
         date = day.get('@date', None)
         if not date:
             raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
-                                detail="DAY_DATE_NOT_VALID")
+                                detail={"code": "DAY_DATE_NOT_VALID", "message": "Day date is not valid"})
 
         room_by_name = {}
 
@@ -246,7 +247,7 @@ async def add_sessions(conference, content, tracks_by_name):
 
             if not room_name:
                 raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
-                                    detail="ROOM_NAME_NOT_VALID")
+                                    detail={"code": "ROOM_NAME_NOT_VALID", "message": "Room name is not valid"})
 
             room_slug = slugify.slugify(room_name)
 
@@ -601,7 +602,7 @@ async def get_conference_sessions(conference_acronym):
     conference = await models.Conference.filter(acronym=conference_acronym).get_or_none()
     if not conference:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="CONFERENCE_NOT_FOUND")
+                            detail={"code": "CONFERENCE_NOT_FOUND", "message": "conference not found"})
 
     conference = await get_conference(conference.id)
     serialized = await opencon_serialize(conference)
@@ -688,7 +689,7 @@ async def get_current_conference():
 
     if not conference:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="CONFERENCE_NOT_FOUND")
+                            detail={"code": "CONFERENCE_NOT_FOUND", "message": "conference not found"})
     return conference
 
 
@@ -728,12 +729,12 @@ async def bookmark_session(id_user, id_session):
     user = await models.UserAnonymous.filter(id=id_user).get_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="USER_NOT_FOUND")
+                            detail={"code": "USER_NOT_FOUND", "message": "user not found"})
 
     session = await models.EventSession.filter(id=id_session).get_or_none()
     if not session:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="SESSION_NOT_FOUND")
+                            detail={"code": "SESSION_NOT_FOUND", "message": "session not found"})
 
     try:
         current_bookmark = await models.AnonymousBookmark.filter(user=user, session=session).get_or_none()
@@ -753,29 +754,27 @@ def now():
 async def rate_session(id_user, id_session, rate):
     if rate < 1 or rate > 5:
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
-                            detail="RATE_NOT_VALID")
+                            detail={"code": "RATE_NOT_VALID", "message": "rate not valid, use number between 1 and 5"})
 
     user = await models.UserAnonymous.filter(id=id_user).get_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="USER_NOT_FOUND")
+                            detail={"code": "USER_NOT_FOUND", "message": "user not found"})
 
     session = await models.EventSession.filter(id=id_session).get_or_none()
     if not session:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="SESSION_NOT_FOUND")
+                            detail={"code": "SESSION_NOT_FOUND", "message": "session not found"})
 
     if not session.rateable:
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
-                            detail="SESSION_IS_NOT_RATEABLE")
+                            detail={"code": "SESSION_IS_NOT_RATEABLE", "message": "session is not rateable"})
 
     session_start_datetime_str = f'{session.start_date}'
 
     if str(now()) < session_start_datetime_str:
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
-                            detail="CAN_NOT_RATE_SESSION_IN_FUTURE")
-
-
+                            detail={"code": "CAN_NOT_RATE_SESSION_IN_FUTURE", "message": "The session cannot be rated because it hasn't started. You can submit the rating after the session begins."})
 
     try:
         current_rate = await models.AnonymousRate.filter(user=user, session=session).get_or_none()

@@ -188,7 +188,8 @@ class Test2024(BaseAPITest):
             response = await ac.post(f"/api/sessions/{id_1st_session}/rate", json={'rating': 5}, headers={"Authorization": f"Bearer {self.token}"})
 
             assert response.status_code == 406
-            assert response.json() == {'detail': 'SESSION_IS_NOT_RATEABLE'}
+            assert 'detail' in response.json() and 'code' in response.json()['detail']
+            assert response.json()['detail']['code'] == 'SESSION_IS_NOT_RATEABLE'
 
             id_1st_session = None
             for s in self.sessions:
@@ -202,8 +203,8 @@ class Test2024(BaseAPITest):
             response = await ac.post(f"/api/sessions/{id_1st_session}/rate", json={'rating': 5}, headers={"Authorization": f"Bearer {self.token}"})
 
             assert response.status_code == 406
-            assert response.json() == {'detail': 'CAN_NOT_RATE_SESSION_IN_FUTURE'}
-
+            assert 'detail' in response.json() and 'code' in response.json()['detail']
+            assert response.json()['detail']['code'] == 'CAN_NOT_RATE_SESSION_IN_FUTURE'
 
             with unittest.mock.patch('conferences.controller.conference.now') as mocked_datetime:
                 mocked_datetime.now = datetime.datetime(2024,11,8,11,0)
