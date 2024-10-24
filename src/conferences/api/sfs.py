@@ -117,6 +117,7 @@ class ImportConferenceRequest(pydantic.BaseModel):
     # use_local_xml: Optional[Union[bool, None]] = False
     use_local_xml: Optional[bool] = False
     local_xml_fname: Optional[str] = 'sfscon2024.xml'
+    group_notifications_by_user: Optional[bool] = True
 
 
 @app.post('/api/import-xml', response_model=ConferenceImportRequestResponse, )
@@ -128,7 +129,8 @@ async def import_conference_xml_api(request: ImportConferenceRequest = None):
     XML_URL = os.getenv("XML_URL", None)
 
     try:
-        res = await controller.add_conference(content, XML_URL, force=True)
+        res = await controller.add_conference(content, XML_URL, force=True,
+                                              group_notifications_by_user=request.group_notifications_by_user)
     except Exception as e:
         raise
     conference = res['conference']

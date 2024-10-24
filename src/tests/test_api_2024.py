@@ -345,9 +345,7 @@ class Test2024(BaseAPITest):
             print('-' * 100)
             # assert session['description']
 
-    @patch.object(RedisClientHandler, "get_redis_client",
-                  return_value=RedisClientHandler(redis_instance=fakeredis.FakeStrictRedis()))
-    async def test_push_notification(self, *args, **kwargs):
+    async def do_test_push_notification(self, group_notifications_by_user: bool, expected_notifications: int):
         async with AsyncClient(app=self.app, base_url="http://test") as ac:
             response = await ac.post("/api/authorize")
             assert response.status_code == 200
@@ -407,17 +405,27 @@ class Test2024(BaseAPITest):
             assert response.json() == {'bookmarked': True}
 
             response = await ac.post("/api/import-xml", json={'use_local_xml': True,
-                                                              'local_xml_fname': 'sfscon2024.1st_session_moved_for_5_minutes.xml'})
+                                                              'local_xml_fname': 'sfscon2024.1st_session_moved_for_5_minutes.xml',
+                                                              'group_notifications_by_user': group_notifications_by_user
+                                                              })
             assert response.status_code == 200
 
         redis_client = RedisClientHandler.get_redis_client()
         all_messages = redis_client.get_all_messages('opencon_push_notification')
-        assert len(all_messages) == 3
+        assert len(all_messages) == expected_notifications
         ...
 
+    @patch.object(RedisClientHandler, "get_redis_client",
+                  return_value=RedisClientHandler(redis_instance=fakeredis.FakeStrictRedis()))
+    async def test_push_notification_ungrouped(self, *args, **kwargs):
+        await self.do_test_push_notification(group_notifications_by_user=False, expected_notifications=3)
 
-@patch.object(RedisClientHandler, "get_redis_client",
-              return_value=RedisClientHandler(redis_instance=fakeredis.FakeStrictRedis()))
+    @patch.object(RedisClientHandler, "get_redis_client",
+                  return_value=RedisClientHandler(redis_instance=fakeredis.FakeStrictRedis()))
+    async def test_push_notification_grouped(self, *args, **kwargs):
+        await self.do_test_push_notification(group_notifications_by_user=True, expected_notifications=2)
+
+
 class TestJsonData(BaseAPITest):
     async def setup(self):
 
@@ -441,7 +449,7 @@ class TestJsonData(BaseAPITest):
                 else:
                     self.sessions.append(room['event'])
 
-    async def test(self, *args, **kwargs):
+    async def test(self):
         ...
         unique_ids = set()
         print()

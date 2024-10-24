@@ -97,7 +97,8 @@ async def db_add_or_update_tracks(conference, content_tracks):
     if 'SFSCON' not in tracks_by_name:
         db_track = await models.Track.filter(conference=conference, name='SFSCON').get_or_none()
         if not db_track:
-            db_track = await models.Track.create(**{'conference': conference, 'order': -1, 'name': f'SFSCON', 'slug': f'sfscon', 'color': 'black'})
+            db_track = await models.Track.create(
+                **{'conference': conference, 'order': -1, 'name': f'SFSCON', 'slug': f'sfscon', 'color': 'black'})
 
         tracks_by_name['SFSCON'] = db_track
 
@@ -228,7 +229,9 @@ async def add_sessions(conference, content, tracks_by_name):
                 if unique_id == '2023day1event5':
                     ...
                 if unique_id in events_by_unique_id:
-                    raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail={"code": f"EVENT_UNIQUE_ID_ALREADY_EXISTS", "message": f"Event {unique_id} already exists"})
+                    raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                                        detail={"code": f"EVENT_UNIQUE_ID_ALREADY_EXISTS",
+                                                "message": f"Event {unique_id} already exists"})
 
                 events_by_unique_id[unique_id] = unique_id
 
@@ -369,7 +372,8 @@ async def add_sessions(conference, content, tracks_by_name):
                                                                     str_start_time=str_start_time,
                                                                     start_date=event_start,
                                                                     duration=event_duration,
-                                                                    end_date=event_start + datetime.timedelta(seconds=event_duration) if event_start and event_duration else None,
+                                                                    end_date=event_start + datetime.timedelta(
+                                                                        seconds=event_duration) if event_start and event_duration else None,
                                                                     )
 
                         # await models.StarredSession.create(event_session=db_event,
@@ -392,7 +396,8 @@ async def add_sessions(conference, content, tracks_by_name):
                                                          'db_room': db_room,
                                                          'str_start_time': str_start_time,
                                                          'start_date': event_start,
-                                                         'end_date': event_start + datetime.timedelta(seconds=event_duration) if event_start and event_duration else None})
+                                                         'end_date': event_start + datetime.timedelta(
+                                                             seconds=event_duration) if event_start and event_duration else None})
 
                         await db_event.save()
 
@@ -413,7 +418,8 @@ async def add_sessions(conference, content, tracks_by_name):
                     for person in persons:
 
                         try:
-                            db_person = await models.ConferenceLecturer.filter(conference=conference, external_id=person['@id']).get_or_none()
+                            db_person = await models.ConferenceLecturer.filter(conference=conference,
+                                                                               external_id=person['@id']).get_or_none()
                         except Exception as e:
                             log.critical(f'Error adding person {person["#text"]} :: {str(e)}')
                             raise
@@ -469,10 +475,8 @@ async def add_sessions(conference, content, tracks_by_name):
     return changes
 
 
-async def send_changes_to_bookmakers(conference, changes, test=True):
-
-
-    log.info('-'*100)
+async def send_changes_to_bookmakers(changes, group_4_user=True):
+    log.info('-' * 100)
     log.info("send_changes_to_bookmakers")
 
     changed_sessions = changes.keys()
@@ -502,20 +506,18 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
             log.info(f"S1 {session.id}")
 
         q = models.EventSession.filter(id__in=changed_sessions,
-                                                        anonymous_bookmarks__user__push_notification_token__isnull=False
-                                                        ).prefetch_related('anonymous_bookmarks',
-                                                                           'room',
-                                                                           'anonymous_bookmarks__user'
-                                                                           ).distinct()
+                                       anonymous_bookmarks__user__push_notification_token__isnull=False
+                                       ).prefetch_related('anonymous_bookmarks',
+                                                          'room',
+                                                          'anonymous_bookmarks__user'
+                                                          ).distinct()
 
         log.info("X")
-        # print("X)")
 
-        # sent = set()
-
+        notify_users = {}
         for session in await q:
 
-            log.info('-'*100)
+            log.info('-' * 100)
             log.info(f"Session {session.id}")
 
             for bookmarks4session in session.anonymous_bookmarks:
@@ -525,7 +527,8 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
                 _from = changes[str(session.id)]['old_start_timestamp'].strftime('%m.%d. %H:%M')
                 _to = changes[str(session.id)]['new_start_timestamp'].strftime('%m.%d. %H:%M')
 
-                if changes[str(session.id)]['old_start_timestamp'].date() == changes[str(session.id)]['new_start_timestamp'].date():
+                if changes[str(session.id)]['old_start_timestamp'].date() == changes[str(session.id)][
+                    'new_start_timestamp'].date():
                     _from = changes[str(session.id)]['old_start_timestamp'].strftime('%H:%M')
                     _to = changes[str(session.id)]['new_start_timestamp'].strftime('%H:%M')
 
@@ -536,36 +539,44 @@ async def send_changes_to_bookmakers(conference, changes, test=True):
                     notification2token[bookmarks4session.user.push_notification_token] = []
                 notification2token[bookmarks4session.user.push_notification_token].append(notification)
 
+                if not group_4_user:
+                    pn_payload = {'id': bookmarks4session.user.push_notification_token,
+                                  'expo_push_notification_token': bookmarks4session.user.push_notification_token,
+                                  'subject': "Event rescheduled",
+                                  'message': notification,
+                                  'data': {
+                                      'command': 'SESSION_START_CHANGED',
+                                      'session_id': str(session.id),
+                                      'value': changes[str(session.id)]['new_start_timestamp'].strftime(
+                                          '%Y-%m-%d %H:%M:%S')
+                                  }
+                                  }
 
-                pn_payload = {'id': bookmarks4session.user.push_notification_token,
-                                                                 'expo_push_notification_token': bookmarks4session.user.push_notification_token,
-                                                                 'subject': "Event rescheduled",
-                                                                 'message': notification
-                                                                 }
+                    log.info(f"SENDING PUSH NOTIFICATION TO {bookmarks4session.user.push_notification_token}")
+                    redis_client.push_message('opencon_push_notification', pn_payload)
 
-                log.info(f"SENDING PUSH NOTIFICATION TO {bookmarks4session.user.push_notification_token}")
-                # log.info(f"PN PAYLOAD {pn_payload}")
+                else:
+                    if bookmarks4session.user_id not in notify_users:
+                        notify_users[bookmarks4session.user_id] = {
+                            'token': bookmarks4session.user.push_notification_token, 'sessions': set()}
+                    notify_users[bookmarks4session.user_id]['sessions'].add(bookmarks4session.session_id)
 
-                # s = json.dumps(pn_payload, sort_keys=True)
-                # if s in sent:
-                #     log.info(
-                #         f"PRESKACEM SLANJE {bookmarks4session.session_id} na: {bookmarks4session.user.push_notification_token}")
-                #     # log.info(f"Izbegavam da saljem drugi put {s}")
-                #     continue
-
-
-                log.info(f"sad saljem sesiju {bookmarks4session.session_id} na: {bookmarks4session.user.push_notification_token}")
+        if group_4_user and notify_users:
+            for id_user in notify_users:
+                pn_payload = {'id': notify_users[id_user]['token'],
+                              'expo_push_notification_token': notify_users[id_user]['token'],
+                              'subject': "Event rescheduled" if len(
+                                  notify_users[id_user]['sessions']) == 1 else "Events rescheduled",
+                              'message': "Some of your bookmarked events have been rescheduled",
+                              'data': {
+                                  'command': 'OPEN_BOOKMARKS',
+                              }
+                              }
+                log.info(f"SENDING PUSH NOTIFICATION TO {notify_users[id_user]['token']}")
                 redis_client.push_message('opencon_push_notification', pn_payload)
-                # sent.add(s)
 
 
-
-                ...
-
-        ...
-
-
-async def add_conference(content: dict, source_uri: str, force: bool = False):
+async def add_conference(content: dict, source_uri: str, force: bool = False, group_notifications_by_user=True):
     conference = await models.Conference.filter(source_uri=source_uri).get_or_none()
 
     created = False
@@ -602,7 +613,7 @@ async def add_conference(content: dict, source_uri: str, force: bool = False):
 
     changes_updated = None
     if changes:
-        changes_updated = await send_changes_to_bookmakers(conference, changes, test=True)
+        changes_updated = await send_changes_to_bookmakers(changes, group_4_user=group_notifications_by_user)
 
     return {'conference': conference,
             'created': created,
@@ -630,7 +641,8 @@ async def get_conference_sessions(conference_acronym):
         bookmark_per_event[str(bpe.event_session_id)] += 1
 
     rate_per_event = {}
-    for rpe in await models.StarredSession.filter(event_session__conference=conference).prefetch_related('event_session').all():
+    for rpe in await models.StarredSession.filter(event_session__conference=conference).prefetch_related(
+            'event_session').all():
         rate_per_event[str(rpe.event_session_id)] = rpe.total_stars / rpe.nr_votes if rpe.nr_votes else ' '
 
     for day in serialized['conference']['idx']['ordered_sessions_by_days']:
@@ -639,7 +651,9 @@ async def get_conference_sessions(conference_acronym):
 
             sessions.append({
                 'event': session['title'],
-                'speakers': ', '.join([serialized['conference']['db']['lecturers'][id_lecturer]['display_name'] for id_lecturer in session['id_lecturers']]),
+                'speakers': ', '.join(
+                    [serialized['conference']['db']['lecturers'][id_lecturer]['display_name'] for id_lecturer in
+                     session['id_lecturers']]),
                 'date': session['date'],
                 'bookmarks': bookmark_per_event[str(id_session)] if id_session in bookmark_per_event else 0,
                 'rating': rate_per_event[str(id_session)] if str(id_session) in rate_per_event else ' '
@@ -681,33 +695,36 @@ async def get_pretix_order(conference: models.Conference, id_pretix_order: str):
         log.critical(f'Error getting pretix order {id_pretix_order} :: {str(e)}')
         raise
 
+
 async def get_all_anonymous_users_with_bookmarked_sessions():
     conference = await get_current_conference()
     if not conference:
         raise HTTPException(status_code=404, detail={"code": "CONFERENCE_NOT_FOUND", "message": "Conference not found"})
 
-    all_users = await models.UserAnonymous.all().prefetch_related('bookmarks','bookmarks__session')
+    all_users = await models.UserAnonymous.all().prefetch_related('bookmarks', 'bookmarks__session')
 
     return [{'id': user.id, 'bookmarks': [b.session.title for b in user.bookmarks]} for user in all_users]
+
 
 async def get_sessions_by_rate():
     conference = await get_current_conference()
     if not conference:
         raise HTTPException(status_code=404, detail={"code": "CONFERENCE_NOT_FOUND", "message": "Conference not found"})
 
-
     all_sessions = await models.EventSession.filter(
         conference=conference
     ).annotate(
         avg_rate=Avg('anonymous_rates__rate'),
         rates_count=Count('anonymous_rates')
-    ).order_by('avg_rate','title').prefetch_related('anonymous_rates').all()
+    ).order_by('avg_rate', 'title').prefetch_related('anonymous_rates').all()
 
     # all_sessions = await models.EventSession.filter(conference=conference).prefetch_related('anonymous_rates').all()
     return [{'title': session.title,
              'rates': len(session.anonymous_rates),
-             'avg_rate': sum([r.rate for r in session.anonymous_rates]) / len (session.anonymous_rates) if session.anonymous_rates else None
+             'avg_rate': sum([r.rate for r in session.anonymous_rates]) / len(
+                 session.anonymous_rates) if session.anonymous_rates else None
              } for session in all_sessions]
+
 
 async def get_current_conference():
     conference = await models.Conference.filter().prefetch_related('tracks',
@@ -759,12 +776,14 @@ async def get_current_conference():
 
 async def authorize_user(push_notification_token: str = None):
     # log.info(f"AUTHORIZING NEW ANONYMOUS USER push_notification_token={push_notification_token}")
-    anonymous = models.UserAnonymous() #push_notification_token=push_notification_token)
+    anonymous = models.UserAnonymous()  # push_notification_token=push_notification_token)
     await anonymous.save()
     return str(anonymous.id)
 
+
 async def get_user(id_user: uuid.UUID):
     return await models.UserAnonymous.filter(id=id_user).get_or_none()
+
 
 async def bookmark_session(id_user, id_session):
     user = await models.UserAnonymous.filter(id=id_user).get_or_none()
@@ -789,8 +808,10 @@ async def bookmark_session(id_user, id_session):
         await current_bookmark.delete()
     return {'bookmarked': False}
 
+
 def now():
     return datetime.datetime.now()
+
 
 async def rate_session(id_user, id_session, rate):
     if rate < 1 or rate > 5:
@@ -815,7 +836,8 @@ async def rate_session(id_user, id_session, rate):
 
     if str(now()) < session_start_datetime_str:
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
-                            detail={"code": "CAN_NOT_RATE_SESSION_IN_FUTURE", "message": "Rating is only possible after the talk has started."})
+                            detail={"code": "CAN_NOT_RATE_SESSION_IN_FUTURE",
+                                    "message": "Rating is only possible after the talk has started."})
 
     try:
         current_rate = await models.AnonymousRate.filter(user=user, session=session).get_or_none()
@@ -848,8 +870,9 @@ async def opencon_serialize_anonymouse(user_id, conference, last_updated=None):
         if session.anonymous_rates:
             all_rates_for_session = [r.rate for r in session.anonymous_rates]
             if all_rates_for_session:
-                conference_avg_rating['rates_by_session'][str(session.id)] = [sum(all_rates_for_session) / len(all_rates_for_session),
-                                                                              len(all_rates_for_session)]  # [session.anonymous_rates.avg_stars,
+                conference_avg_rating['rates_by_session'][str(session.id)] = [
+                    sum(all_rates_for_session) / len(all_rates_for_session),
+                    len(all_rates_for_session)]  # [session.anonymous_rates.avg_stars,
             # session.anonymous_rates.nr_votes]
 
     user = await models.UserAnonymous.filter(id=user_id).prefetch_related('bookmarks', 'rates').get_or_none()
@@ -884,9 +907,12 @@ async def opencon_serialize_anonymouse(user_id, conference, last_updated=None):
     for s in db['sessions'].values():
         days.add(s['date'])
 
-    idx['ordered_lecturers_by_display_name'] = [l['id'] for l in sorted(db['lecturers'].values(), key=lambda x: x['display_name'])]
-    idx['ordered_sessions_by_days'] = {d: [s['id'] for s in db['sessions'].values() if s['date'] == d] for d in sorted(list(days))}
-    idx['ordered_sessions_by_tracks'] = {t: [s['id'] for s in db['sessions'].values() if s['id_track'] == t] for t in db['tracks'].keys()}
+    idx['ordered_lecturers_by_display_name'] = [l['id'] for l in
+                                                sorted(db['lecturers'].values(), key=lambda x: x['display_name'])]
+    idx['ordered_sessions_by_days'] = {d: [s['id'] for s in db['sessions'].values() if s['date'] == d] for d in
+                                       sorted(list(days))}
+    idx['ordered_sessions_by_tracks'] = {t: [s['id'] for s in db['sessions'].values() if s['id_track'] == t] for t in
+                                         db['tracks'].keys()}
     idx['days'] = sorted(list(days))
 
     # conference_avg_rating = {'rates_by_session': {}}
